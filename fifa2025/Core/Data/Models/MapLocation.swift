@@ -7,15 +7,29 @@
 
 import Foundation
 import CoreLocation
+import SwiftUI
 
 // Enum for filtering categories
-enum LocationType: String, CaseIterable, Identifiable {
-    case food = "Food"
-    case shop = "Shop"
-    case cultural = "Cultural"
-    case stadium = "Stadium"
+enum LocationType: Int, CaseIterable, Identifiable {
+    case food = 0
+    case shop = 1
+    case cultural = 2
+    case stadium = 3
     
-    var id: String { self.rawValue }
+    var id: Int { rawValue }
+    
+    var type: LocalizedStringKey{
+        switch self {
+        case .food:
+            return "Food"
+        case .shop:
+            return "Shop"
+        case .cultural:
+            return "Cultural"
+        case .stadium:
+            return "Stadium"
+        }
+    }
     
     var sfSymbol: String {
         switch self {

@@ -110,8 +110,11 @@ struct FilterBarView: View {
                 
                 // Category Toggles
                 ForEach(LocationType.allCases) { type in
-                    Button(type.rawValue) {
+                    Button(action: {
                         onToggleFilter(type)
+                    }) {
+                        // Use a Label to combine the icon and text
+                        Label(type.type, systemImage: type.sfSymbol)
                     }
                     .buttonStyle(FilterButtonStyle(isActive: activeFilters.contains(type)))
                 }

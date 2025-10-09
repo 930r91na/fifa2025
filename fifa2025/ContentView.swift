@@ -29,7 +29,6 @@ struct ContentView: View {
                 .tabItem {
                     Label("Map", systemImage: "map.fill")
                 }
-                .accentColor(Color.theme.accent)
         }
     }
 }

@@ -12,6 +12,7 @@ struct fifa2025App: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .foregroundColor(Color.backgroud)
         }
     }
 }

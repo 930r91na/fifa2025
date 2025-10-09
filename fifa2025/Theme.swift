@@ -14,11 +14,17 @@ extension Color {
 }
 
 struct ColorTheme {
-    let accent = Color("AccentColor")
+    let accent = Color("BackgroundColor")
     let background = Color("BackgroundColor")
     let secondaryBackground = Color("SecondaryBackgroundColor")
     let primaryText = Color("PrimaryTextColor")
-    let secondaryText = Color.secondary
+    let secondaryText = Color("SecondaryTextColor")
+    let fifaAqua = Color("FifaCompAqua")
+    let fifaRed = Color("FifaCompRed")
+    let fifaGreen = Color("FifaCompGreen")
+    let fifaLime = Color("FifaCompLime")
+    let fifaPurple = Color("FifaCompPurple")
+    let fifaLila = Color("FifaCompLila")
     let success = Color.green
     let warning = Color.orange
     let error = Color.red

@@ -3,7 +3,7 @@
 //  fifa2025
 //
 //  Created by Georgina on 02/10/25.
-//
+
 import SwiftUI
 internal import EventKit
 
@@ -13,105 +13,197 @@ struct HomeView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color.theme.background.ignoresSafeArea()
+                // Use the theme background color
+                Color("BackgroudColor").ignoresSafeArea()
                 
-                VStack(alignment: .leading, spacing: 20) {
-                    Text("Suggestions for You")
-                        .font(Font.theme.largeTitle)
-                        .padding(.horizontal)
-                    
-                    if viewModel.calendarAuthorizationStatus != .fullAccess {
-                        CalendarAccessPromptView(viewModel: viewModel)
-                    } else if viewModel.suggestions.isEmpty {
-                        Text("No suggestions right now. Check back when you have more free time!")
-                            .font(Font.theme.body)
-                            .foregroundColor(Color.theme.secondaryText)
-                            .padding()
-                    } else {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 16) {
-                                ForEach(viewModel.suggestions) { suggestion in
-                                    SuggestionCardView(suggestion: suggestion)
-                                }
-                            }
-                            .padding(.horizontal)
-                        }
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        HeaderGreetingView(name: "Juan")
+                                    
+                        ScoreView(points: 1250)
+                                    
+                        ExploreCityView(viewModel: viewModel)
+                                    
+                        DailyChallengeView()
                     }
-                    
-                    Spacer()
+                    .padding()
                 }
             }
-            .navigationTitle("Home")
+            .onAppear {
+                viewModel.checkAndRequestPermissionsIfNeeded()
+            }
         }
     }
 }
 
-// MARK: - Subviews
+// MARK: - Subviews for HomeView
 
-struct SuggestionCardView: View {
-    let suggestion: ItinerarySuggestion
+
+struct HeaderGreetingView: View {
+    var name: String
     
     var body: some View {
-        VStack(alignment: .leading) {
-            // In a real app, you'd load an image from location.imageName
-            Color.gray.opacity(0.3)
-                .frame(height: 120)
-                .overlay(
-                    Image(systemName: suggestion.location.type.sfSymbol)
-                        .font(.largeTitle)
-                        .foregroundColor(Color.theme.accent)
-                )
+        HStack {
+            Text("FWC26")
+                .font(.title.weight(.heavy))
+                .foregroundColor(.white)
             
-            VStack(alignment: .leading, spacing: 8) {
-                Text(suggestion.location.name)
-                    .font(Font.theme.subheadline)
+            Spacer()
+            
+            VStack(alignment: .trailing) {
+                Text("Hola, \(name)")
+                    .font(Font.theme.headline)
                     .foregroundColor(Color.theme.primaryText)
-                    .lineLimit(1)
-                
-                Text(suggestion.reason)
+                Text("Ciudad de México")
                     .font(Font.theme.caption)
                     .foregroundColor(Color.theme.secondaryText)
-                
-                HStack {
-                    Image(systemName: "location.fill")
-                    Text("\(Int(suggestion.travelTime / 60)) min drive")
-                }
-                .font(Font.theme.caption)
-                .foregroundColor(Color.theme.accent)
             }
-            .padding()
         }
-        .background(Color.theme.secondaryBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(radius: 5)
-        .frame(width: 220)
+    }
+}
+
+
+struct HeaderView: View {
+    var body: some View {
+        HStack {
+            Image(systemName: "calendar")
+            VStack(alignment: .leading) {
+                Text("Explora la ciudad")
+                    .font(Font.theme.headline)
+                    .foregroundColor(Color.theme.primaryText)
+                
+                Text("Te recomendamos los mejores momentos de acuerdo a tu calendario.")
+                    .font(Font.theme.caption)
+                    .foregroundColor(Color.theme.secondaryText)
+            }
+        }
+    }
+}
+
+struct ScoreView: View {
+    var points: Int
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Tu puntuación")
+                Spacer()
+                Image(systemName: "trophy.fill")
+                Text("\(points) pts")
+            }
+            .font(Font.theme.subheadline)
+            .foregroundColor(Color.theme.primaryText)
+            
+            // Placeholder for progress bar
+            ProgressView(value: 0.75)
+                .tint(Color.theme.fifaLime)
+            
+            Text("¡Visita dos lugares más para subir de nivel!")
+                .font(Font.theme.caption)
+                .foregroundColor(Color.theme.secondaryText)
+        }
+        .padding()
+        .background(Color.theme.secondaryBackground.opacity(0.5))
+        .cornerRadius(16)
+    }
+}
+
+
+struct NoSuggestionsView: View {
+    var body: some View {
+        VStack {
+            Spacer()
+            Text("No suggestions right now.")
+                .font(Font.theme.body)
+                .foregroundColor(Color.theme.secondaryText)
+            Text("Check back when you have more free time!")
+                .font(Font.theme.caption)
+                .foregroundColor(Color.theme.secondaryText)
+            Spacer()
+        }
+        .padding()
     }
 }
 
 struct CalendarAccessPromptView: View {
-    @ObservedObject var viewModel: HomeViewModel
-    
     var body: some View {
+        // This view can be simplified or enhanced, as it no longer needs a button.
+        // It now serves as an informational placeholder.
         VStack(spacing: 16) {
+            Spacer()
             Text("Get personalized suggestions!")
                 .font(Font.theme.headline)
-            Text("Allow calendar access to find free time in your schedule for local adventures.")
+            Text("Enable calendar access in your iPhone's Settings to see local recommendations.")
                 .font(Font.theme.body)
                 .foregroundColor(Color.theme.secondaryText)
                 .multilineTextAlignment(.center)
-            
-            Button("Grant Access") {
-                viewModel.requestCalendarAccess()
-            }
-            .padding()
-            .background(Color.theme.accent)
-            .foregroundColor(.white)
-            .cornerRadius(12)
+            Spacer()
         }
         .padding(30)
-        .background(Color.theme.secondaryBackground)
+        .background(Color.theme.secondaryBackground.opacity(0.5))
         .cornerRadius(20)
         .padding(.horizontal)
+    }
+}
+
+
+struct ExploreCityView: View {
+    @ObservedObject var viewModel: HomeViewModel
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            HeaderView() // Re-using the header from the previous step
+
+            // This frame modifier is the key to fixing the size issue
+            Group {
+                if viewModel.calendarAuthorizationStatus == .fullAccess {
+                    if viewModel.suggestions.isEmpty {
+                        NoSuggestionsView()
+                            .frame(height: 300) // Give a consistent height
+                    } else {
+                        SuggestionCarouselView(suggestions: viewModel.suggestions)
+                    }
+                } else {
+                    CalendarAccessPromptView()
+                        .frame(height: 300) // Give a consistent height
+                }
+            }
+            .frame(height: 500) // **This is the fix to control the carousel's height**
+        }
+    }
+}
+
+
+struct DailyChallengeView: View {
+    var body: some View {
+        VStack(alignment: .leading) {
+            HStack {
+                Text("Desafío del día")
+                    .font(Font.theme.subheadline)
+                Spacer()
+                Text("1/3")
+                    .font(Font.theme.caption)
+            }
+            .foregroundColor(Color.theme.primaryText)
+            
+            Text("Visitar un restaurante local")
+                .font(Font.theme.headline)
+                .foregroundColor(Color.theme.primaryText)
+                .padding(.vertical, 8)
+            
+            Button(action: {}) {
+                Text("Registrar y dejar reseña")
+                    .font(.footnote.weight(.bold))
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color("MainButtonColor"))
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+            }
+        }
+        .padding()
+        .background(Color.theme.secondaryBackground.opacity(0.5))
+        .cornerRadius(16)
     }
 }
 

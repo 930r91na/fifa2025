@@ -36,6 +36,12 @@ class HomeViewModel: ObservableObject {
             .assign(to: &$calendarAuthorizationStatus)
     }
     
+    func checkAndRequestPermissionsIfNeeded() {
+        if calendarAuthorizationStatus == .notDetermined {
+            calendarManager.requestAccess()
+        }
+    }
+    
     func requestCalendarAccess() {
         calendarManager.requestAccess()
     }

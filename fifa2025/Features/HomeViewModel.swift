@@ -9,6 +9,7 @@ import Foundation
 import CoreLocation
 import Combine
 internal import EventKit
+import SwiftUI
 
 @MainActor
 class HomeViewModel: ObservableObject {
@@ -16,6 +17,7 @@ class HomeViewModel: ObservableObject {
     @Published var calendarAuthorizationStatus: EKAuthorizationStatus
     @Published var showScheduleAlert = false
     @Published var scheduleAlertMessage = ""
+    @StateObject private var userDataManager = UserDataManager()
     
     private let calendarManager = CalendarManager()
     private let locationManager = LocationManager()
@@ -75,14 +77,16 @@ class HomeViewModel: ObservableObject {
     }
     
     private func regenerateSuggestions(events: [Event], userLocation: CLLocation) {
-        let now = Date()
-        let endOfDay = Calendar.current.startOfDay(for: now).addingTimeInterval(24 * 60 * 60 - 1)
-        
-        let freeSlots = SuggestionEngine.findFreeTimeSlots(events: events, from: now, to: endOfDay)
-        self.suggestions = SuggestionEngine.generateSuggestions(
-            for: freeSlots,
-            from: userLocation,
-            to: MockData.locations
-        )
-    }
+            let now = Date()
+            let endOfDay = Calendar.current.startOfDay(for: now).addingTimeInterval(24 * 60 * 60 - 1)
+            
+            let freeSlots = SuggestionEngine.findFreeTimeSlots(events: events, from: now, to: endOfDay)
+            
+            self.suggestions = SuggestionEngine.generateSuggestions(
+                for: freeSlots,
+                from: userLocation,
+                for: userDataManager.user,
+                allLocations: MockData.locations
+            )
+        }
 }

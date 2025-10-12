@@ -13,78 +13,85 @@ class DENUEService {
     
     private let apiService: APIServiceProtocol
     private let apiToken: String
-    
-    // A specific logger for our service for better debugging
     private let logger = Logger(subsystem: "com.fifa2025.TurismoLocalWC26", category: "DENUEService")
     
+    // Cache for raw DENUEBusiness objects. Key will be a combination of grid and category.
+    private let cache = CacheManager<[DENUEBusiness]>()
+
     init(apiService: APIServiceProtocol = APIService()) {
         self.apiService = apiService
         self.apiToken = DENUEService.loadApiToken()
     }
     
-    // Securely loads the API token from the plist file.
     private static func loadApiToken() -> String {
         guard let url = Bundle.main.url(forResource: "ApiKeys", withExtension: "plist"),
               let data = try? Data(contentsOf: url),
               let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any],
               let token = plist["DENUE_API_TOKEN"] as? String else {
-            fatalError("Could not load API Token from ApiKeys.plist. Please ensure the file and key exist.")
+            fatalError("Could not load API Token from ApiKeys.plist.")
         }
         return token
     }
     
-    /// Fetches businesses for multiple categories concurrently, combines them, and removes duplicates.
-    func fetchBusinesses(for categories: [LocationType], near coordinate: CLLocationCoordinate2D, radiusInMeters: Int = 2000) async throws -> [MapLocation] {
+    /// Fetches businesses for a SINGLE category. Checks cache first.
+    func fetchBusinesses(for category: LocationType, gridKey: String, near coordinate: CLLocationCoordinate2D, radiusInMeters: Int) async throws -> [MapLocation] {
         guard !apiToken.isEmpty else {
-            logger.error("API Token is missing. Cannot make a request.")
+            logger.error("API Token is missing.")
             throw APIError.invalidURL
         }
 
-        // Use a Swift TaskGroup to run multiple network requests concurrently
-        let allBusinesses: [DENUEBusiness] = await withTaskGroup(of: [DENUEBusiness].self, returning: [DENUEBusiness].self) { group in
-            
-            // Get all unique keywords from the selected categories
-            let allKeywords = Set(categories.flatMap { keywords(for: $0) })
-            
-            for query in allKeywords {
+        // Use a more specific cache key: grid cell + category
+        let cacheKey = "\(gridKey)-\(category.rawValue)"
+
+        // 1. Check Cache First
+        if let cachedBusinesses = cache.getValue(forKey: cacheKey) {
+            logger.debug("Cache hit for key: \(cacheKey).")
+            return transformToMapLocations(cachedBusinesses)
+        }
+        
+        logger.info("Cache miss for key: \(cacheKey). Fetching from network.")
+        
+        // 2. Fetch from Network if Cache Misses
+        // This TaskGroup now only fetches keywords for ONE category, reducing server load.
+        let categoryKeywords = keywords(for: category)
+        let businessesForCategory = await fetchConcurrently(for: categoryKeywords, near: coordinate, radiusInMeters: radiusInMeters)
+        
+        let uniqueBusinesses = Array(Set(businessesForCategory))
+        
+        // 3. Save to Cache
+        cache.setValue(uniqueBusinesses, forKey: cacheKey)
+        logger.info("Fetched and cached \(uniqueBusinesses.count) businesses for key: \(cacheKey).")
+        
+        return transformToMapLocations(uniqueBusinesses)
+    }
+    
+    /// Helper to run concurrent requests for a given list of keywords.
+    private func fetchConcurrently(for keywords: [String], near coordinate: CLLocationCoordinate2D, radiusInMeters: Int) async -> [DENUEBusiness] {
+        await withTaskGroup(of: [DENUEBusiness].self, returning: [DENUEBusiness].self) { group in
+            for query in keywords {
                 group.addTask {
                     let urlString = "https://www.inegi.org.mx/app/api/denue/v1/consulta/buscar/\(query)/\(coordinate.latitude),\(coordinate.longitude)/\(radiusInMeters)/\(self.apiToken)".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
                     
-                    guard let url = URL(string: urlString) else {
-                        self.logger.warning("Failed to create a valid URL for query: \(query)")
-                        return [] // Return an empty array for this specific failed task
-                    }
-                    
-                    self.logger.info("Requesting businesses for query '\(query)'")
+                    guard let url = URL(string: urlString) else { return [] }
                     
                     do {
                         return try await self.apiService.request(url: url)
                     } catch {
-                        self.logger.error("Failed to fetch businesses for query '\(query)': \(error.localizedDescription)")
-                        return [] // Return an empty array on error to not fail the whole group
+                        self.logger.error("Request for query '\(query)' failed: \(error.localizedDescription)")
+                        return []
                     }
                 }
             }
             
-            // Collect results from all tasks
-            var collectedBusinesses: [DENUEBusiness] = []
-            for await businesses in group {
-                collectedBusinesses.append(contentsOf: businesses)
+            var collected: [DENUEBusiness] = []
+            for await result in group {
+                collected.append(contentsOf: result)
             }
-            return collectedBusinesses
+            return collected
         }
-        
-        // Remove duplicates using a Set and the business ID
-        let uniqueBusinesses = Array(Set(allBusinesses))
-        logger.info("Successfully fetched \(allBusinesses.count) raw entries, with \(uniqueBusinesses.count) unique businesses.")
-        
-        let mapLocations = transformToMapLocations(uniqueBusinesses)
-        
-        logger.info("Successfully transformed \(mapLocations.count) businesses into MapLocation models.")
-        
-        return mapLocations
     }
 
+    // ... (keywords, transformToMapLocations, and mapBusinessTypeToLocationType functions remain the same)
     /// Maps a LocationType to its corresponding DENUE API search keywords.
     private func keywords(for type: LocationType) -> [String] {
         switch type {
@@ -101,7 +108,7 @@ class DENUEService {
         case .souvenirs:
             return ["dulces", "regalos", "artículos religiosos"]
         case .others:
-            return [] 
+            return [] // Or add default/fallback keywords if desired
         }
     }
     

@@ -1,98 +1,91 @@
-//
-//  MapView.swift
-//  fifa2025
-//
-//  Created by Georgina on 07/10/25.
-//
-
-import SwiftUI
-import MapKit
-
 import SwiftUI
 import MapKit
 
 struct MapView: View {
-    
+
     @StateObject private var viewModel = MapViewModel()
-    
+    @State private var selectedLocation: MapLocation?
+
     var body: some View {
-        ZStack(alignment: .top) {
-            Color("BackgroudColor").ignoresSafeArea()
-            // The main map view
+        ZStack {
             Map(coordinateRegion: $viewModel.mapRegion,
-                showsUserLocation: true,
                 annotationItems: viewModel.filteredLocations) { location in
                 MapAnnotation(coordinate: location.coordinate) {
-                    LocationMapAnnotationView(locationType: location.type)
-                        .scaleEffect(viewModel.selectedLocation?.id == location.id ? 1.2 : 0.8)
+                    MapAnnotationView(locationType: location.type)
+                        .scaleEffect(selectedLocation?.id == location.id ? 1.0 : 0.7)
                         .shadow(radius: 10)
                         .onTapGesture {
                             withAnimation(.easeInOut) {
-                                viewModel.selectedLocation = location
+                                self.selectedLocation = location
                             }
                         }
                 }
             }
             .ignoresSafeArea()
-            .tint(Color.fifaCompRed) // Use theme color for user location dot
-            
-            // UI Overlays
+
             VStack {
-                FilterBarView(
-                    activeFilters: $viewModel.activeFilters,
-                    showWomenInSportsOnly: $viewModel.showWomenInSportsOnly,
-                    onToggleFilter: viewModel.toggleFilter,
-                    onToggleWomenInSports: viewModel.toggleWomenInSportsFilter
-                )
-                .padding()
+                FilterButtonsView(viewModel: viewModel)
+                    .padding(.top)
                 
                 Spacer()
                 
-                HStack {
-                    Spacer()
-                    Button(action: {
-                        viewModel.centerOnUserLocation()
-                    }) {
-                        Image(systemName: "location.fill")
-                            .font(.title2)
-                            .padding()
-                            .background(Color.primary.opacity(0.75))
-                            .foregroundColor(.white)
-                            .clipShape(Circle())
-                            .shadow(radius: 10)
-                    }
-                    .padding()
+                if viewModel.isLoading {
+                    ProgressView()
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(10)
+                }
+
+                if let location = selectedLocation {
+                    LocationDetailView(location: location, isShowingDetail: $selectedLocation)
+                        .padding()
+                        .background(RoundedRectangle(cornerRadius: 25.0).fill(.ultraThinMaterial))
+                        .shadow(radius: 10)
+                        .padding(.horizontal)
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .bottom),
+                            removal: .move(edge: .bottom))
+                        )
                 }
             }
         }
-        .sheet(item: $viewModel.selectedLocation) { location in
-            LocationDetailView(location: location)
-                .presentationDetents([.height(300), .medium])
+        .task {
+            await viewModel.loadInitialData()
         }
-        .overlay {
-            if viewModel.isLoading {
-                ProgressView("Finding local spots...")
-                    .padding()
-                    .background(.ultraThickMaterial)
-                    .cornerRadius(10)
-            } else if let errorMessage = viewModel.errorMessage {
-                 // You can create a more elaborate error view
-                Text(errorMessage)
-                    .padding()
-                    .background(.ultraThickMaterial)
-                    .cornerRadius(10)
-                    .foregroundColor(.red)
-            } else if viewModel.locationStatus == .denied {
-                 // New view to guide the user
-                LocationDeniedView()
-            }
+        .alert("Error", isPresented: $viewModel.showAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(viewModel.errorMessage ?? "An unknown error occurred.")
         }
     }
 }
 
-// MARK: - Subviews
+// MARK: - Placeholder Subviews
 
-struct LocationMapAnnotationView: View {
+struct FilterButtonsView: View {
+    @ObservedObject var viewModel: MapViewModel // Correct way to pass a ViewModel to a subview
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack {
+                ForEach(LocationType.allCases) { type in
+                    Button(action: {
+                        viewModel.toggleFilter(for: type)
+                    }) {
+                        Label(type.type, systemImage: type.sfSymbol)
+                            .padding(8)
+                            .background(viewModel.selectedFilters.contains(type) ? Color.blue : Color.gray.opacity(0.5))
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                    }
+                }
+            }
+            .padding(.horizontal)
+        }
+    }
+}
+
+struct MapAnnotationView: View {
     let locationType: LocationType
     
     var body: some View {
@@ -100,14 +93,14 @@ struct LocationMapAnnotationView: View {
             Image(systemName: locationType.sfSymbol)
                 .font(.title2)
                 .padding(10)
-                .background(Color.accentColor.opacity(0.8))
+                .background(Color("FifaCompRed"))
                 .foregroundColor(.white)
                 .clipShape(Circle())
             
             Image(systemName: "triangle.fill")
                 .resizable()
                 .scaledToFit()
-                .foregroundColor(Color.accentColor.opacity(0.8))
+                .foregroundColor(Color("FifaCompRed"))
                 .frame(width: 10, height: 10)
                 .rotationEffect(Angle(degrees: 180))
                 .offset(y: -3)
@@ -115,61 +108,9 @@ struct LocationMapAnnotationView: View {
     }
 }
 
-struct FilterBarView: View {
-    @Binding var activeFilters: Set<LocationType>
-    @Binding var showWomenInSportsOnly: Bool
-    
-    var onToggleFilter: (LocationType) -> Void
-    var onToggleWomenInSports: () -> Void
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                // Women in Sports Toggle
-                Button(action: onToggleWomenInSports) {
-                    Label("Women in Sports", systemImage: showWomenInSportsOnly ? "checkmark.square.fill" : "square")
-                }
-                .buttonStyle(FilterButtonStyle(isActive: showWomenInSportsOnly))
-                
-                // Category Toggles
-                ForEach(LocationType.allCases) { type in
-                    Button(action: {
-                        onToggleFilter(type)
-                    }) {
-                        // Use a Label to combine the icon and text
-                        Label(type.type, systemImage: type.sfSymbol)
-                    }
-                    .buttonStyle(FilterButtonStyle(isActive: activeFilters.contains(type)))
-                }
-            }
-            .padding(8)
-            .background(.thinMaterial)
-            .cornerRadius(12)
-            .shadow(radius: 10)
-        }
-    }
-}
-
-struct FilterButtonStyle: ButtonStyle {
-    var isActive: Bool
-    
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(isActive ? Color.accentColor : Color.secondary.opacity(0.3))
-            .foregroundColor(isActive ? .white : .primary)
-            .cornerRadius(8)
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .animation(.easeOut(duration: 0.1), value: isActive)
-    }
-}
-
-
-// This replaces the old LocationDetailView at the bottom of the file
 struct LocationDetailView: View {
     let location: MapLocation
-    
+    @Binding var isShowingDetail: MapLocation?
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -225,8 +166,6 @@ struct LocationDeniedView: View {
                 .font(.headline)
             Text("Displaying spots in Mexico City by default. To see places near you, please enable location services.")
                 .font(.subheadline)
-                .multilineTextAlignment(.center)
-                .foregroundColor(.secondary)
             
             // Button to open app settings
             if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -238,9 +177,6 @@ struct LocationDeniedView: View {
                 .padding(.top)
             }
         }
-        .padding(30)
-        .background(.ultraThickMaterial)
-        .cornerRadius(16)
         .padding()
     }
 }
@@ -280,8 +216,4 @@ struct InfoRow: View {
             Spacer()
         }
     }
-}
-
-#Preview {
-    MapView()
 }

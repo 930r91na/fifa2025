@@ -7,173 +7,132 @@
 
 import Foundation
 import MapKit
-import Combine
 import SwiftUI
+import Combine
 
 @MainActor
-class MapViewModel: ObservableObject {
+final class MapViewModel: ObservableObject {
     
     // MARK: - Published Properties
+    @Published var filteredLocations: [MapLocation] = []
     @Published var mapRegion: MKCoordinateRegion
-    @Published var filteredLocations: [MapLocation] = [] // Reverted to MapLocation
-    @Published var selectedLocation: MapLocation?
-    @Published var locationStatus: CLAuthorizationStatus
-    
-    @Published var activeFilters: Set<LocationType> = Set(LocationType.allCases)
-    @Published var showWomenInSportsOnly = false
-    
-    // UI State
-    @Published var isLoading = false
     @Published var errorMessage: String?
-
-    // Services and Location Properties
+    @Published var showAlert: Bool = false
+    @Published var isLoading: Bool = false
+    @Published var selectedFilters: Set<LocationType> = Set(LocationType.allCases)
+    
+    // MARK: - Private Properties
     private let denueService = DENUEService()
-    private let locationManager = LocationManager()
     private var cancellables = Set<AnyCancellable>()
-    private var allLocations: [MapLocation] = []
+    
+    // Caching Layers
+    private var locationCache = CacheManager<[MapLocation]>() // Cache for final MapLocation objects
+    private var fetchedGridKeys = Set<String>() // Tracks which grid cells have been fetched
+    
+    // Grid Logic
+    private let gridCellSizeInMeters: CLLocationDistance = 2500 // 2.5km grid cells
 
-    // MARK: - Initializer
     init() {
-        let defaultCenter = CLLocationCoordinate2D(latitude: 19.4326, longitude: -99.1332)
-        self.mapRegion = MKCoordinateRegion(center: defaultCenter, span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05))
-        self.locationStatus = locationManager.authorizationStatus
+        self.mapRegion = MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 19.4326, longitude: -99.1332),
+            span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+        )
         
-        setupMapRegionDebouncing()
-        fetchDataForCurrentStatus()
-        
-        locationManager.$authorizationStatus
-            .dropFirst()
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] status in
-                self?.locationStatus = status
-                self?.fetchDataForCurrentStatus()
-            }
-            .store(in: &cancellables)
+        setupBindings()
     }
     
-    // MARK: - Dynamic Data Fetching
-    private func setupMapRegionDebouncing() {
+    private func setupBindings() {
+        // Debounce map region changes
         $mapRegion
-            .debounce(for: .seconds(1.5), scheduler: DispatchQueue.main)
-            .sink { [weak self] newRegion in
-                self?.loadBusinessesFor(region: newRegion)
-            }
+            .debounce(for: .milliseconds(750), scheduler: RunLoop.main)
+            .sink { [weak self] _ in self?.updateVisibleGridAndFetchData() }
+            .store(in: &cancellables)
+        
+        // React to filter changes by re-applying them to the already fetched data
+        $selectedFilters
+            .sink { [weak self] _ in self?.applyFilters() }
             .store(in: &cancellables)
     }
     
-    private func loadBusinessesFor(region: MKCoordinateRegion) {
-        isLoading = true
-        Task {
-            let edgeLocation = CLLocation(latitude: region.center.latitude, longitude: region.center.longitude + region.span.longitudeDelta / 2)
-            let centerLocation = CLLocation(latitude: region.center.latitude, longitude: region.center.longitude)
-            let radiusInMeters = Int(edgeLocation.distance(from: centerLocation))
-
-            await loadBusinesses(near: region.center, radius: radiusInMeters)
-            isLoading = false
-        }
+    // MARK: - Data Loading and Orchestration
+    
+    func loadInitialData() async {
+        self.filteredLocations = MockData.locations // Start with mock data for immediate UI
+        await updateVisibleGridAndFetchData()
     }
     
-    // MARK: - Core Logic with Capping
-    private func loadBusinesses(near coordinate: CLLocationCoordinate2D, radius: Int) async {
-        errorMessage = nil
-        do {
-            let businesses = try await denueService.fetchBusinesses(for: LocationType.allCases, near: coordinate, radiusInMeters: radius)
-            self.allLocations = capBusinesses(businesses, for: self.mapRegion)
-            self.applyFilters()
-        } catch {
-            self.errorMessage = "Could not load local businesses. Please check your connection."
-            print("Error fetching businesses: \(error)")
-        }
-    }
-    
-    // This new function limits the results based on zoom level
-    private func capBusinesses(_ businesses: [MapLocation], for region: MKCoordinateRegion) -> [MapLocation] {
-        let zoomLevel = region.span.latitudeDelta
-        let limit: Int
+    private func updateVisibleGridAndFetchData() {
+        let centerKey = gridKey(for: mapRegion.center)
         
-        if zoomLevel > 0.2 {       // Very zoomed out
-            limit = 50
-        } else if zoomLevel > 0.05 { // Medium zoom
-            limit = 100
-        } else {                     // Zoomed in
-            limit = 220
-        }
+        guard !fetchedGridKeys.contains(centerKey) else { return }
         
-        if businesses.count > limit {
-            print("Original count: \(businesses.count), capped to: \(limit)")
-            return Array(businesses.prefix(limit))
-        } else {
-            return businesses
-        }
-    }
-    
-    // MARK: - Core Logic
-    func fetchDataForCurrentStatus() {
-        isLoading = true
         Task {
-            if locationManager.isAuthorized(), let location = await userLocation() {
-                self.mapRegion.center = location.coordinate
-                // The debouncer will automatically trigger the first load
-            } else {
-                // Load default data if no permission
-                await loadDataForDefaultLocation()
+            isLoading = true
+            fetchedGridKeys.insert(centerKey) // Mark as fetched immediately
+            
+            // Fetch for each category sequentially to avoid overloading the API
+            for category in Array(selectedFilters) {
+                await loadBusinesses(for: category, gridKey: centerKey, near: mapRegion.center, radius: Int(gridCellSizeInMeters))
             }
+            
             isLoading = false
         }
     }
-    
-    private func loadDataForDefaultLocation() async {
-        let defaultCoordinate = CLLocationCoordinate2D(latitude: 19.4326, longitude: -99.1332)
-        self.mapRegion.center = defaultCoordinate
-    }
 
-    private func userLocation() async -> CLLocation? {
-        let locationsSequence = locationManager.$location.compactMap { $0 }.values
-        return await locationsSequence.first(where: { _ in true })
-    }
-    
-    // MARK: - Methods
-    func centerOnUserLocation(_ coordinate: CLLocationCoordinate2D? = nil) {
-        let coordinateToCenter = coordinate ?? locationManager.location?.coordinate
+    private func loadBusinesses(for category: LocationType, gridKey: String, near coordinate: CLLocationCoordinate2D, radius: Int) async {
+        let cacheKey = "\(gridKey)-\(category.rawValue)"
         
-        guard let center = coordinateToCenter else {
-            print("User location not available to center map.")
+        // Check our ViewModel's cache first
+        if let cachedLocations = locationCache.getValue(forKey: cacheKey) {
+            addLocationsToMap(cachedLocations)
             return
         }
-        
-        withAnimation(.easeIn) {
-            mapRegion = MKCoordinateRegion(
-                center: center,
-                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-            )
+
+        // If not, fetch from the service
+        do {
+            let businesses = try await denueService.fetchBusinesses(for: category, gridKey: gridKey, near: coordinate, radiusInMeters: radius)
+            locationCache.setValue(businesses, forKey: cacheKey) // Cache the result
+            addLocationsToMap(businesses)
+        } catch {
+            self.errorMessage = "Could not load some local businesses. Please check your connection."
+            self.showAlert = true
+            print("Error fetching category \(category): \(error)")
         }
     }
     
-    func toggleFilter(_ filter: LocationType) {
-        if activeFilters.contains(filter) {
-            activeFilters.remove(filter)
+    // MARK: - Filtering and State Management
+    
+    private func addLocationsToMap(_ newLocations: [MapLocation]) {
+        // Add only new, unique businesses to our main list
+        let existingIDs = Set(self.filteredLocations.map { $0.denueID })
+        let uniqueNewLocations = newLocations.filter { !existingIDs.contains($0.denueID) }
+        
+        self.filteredLocations.append(contentsOf: uniqueNewLocations)
+    }
+    
+    func applyFilters() {
+        // Instead of re-fetching, we'll re-filter our cached data.
+        // This is a more advanced step. For now, we'll just handle adding/removing.
+        // The current logic in `loadBusinesses` already fetches based on `selectedFilters`.
+        // A full re-filter would involve iterating over `fetchedGridKeys` and their cached data.
+    }
+    
+    func toggleFilter(for type: LocationType) {
+        if selectedFilters.contains(type) {
+            selectedFilters.remove(type)
+            // Remove locations of this type from the map
+            filteredLocations.removeAll { $0.type == type }
         } else {
-            activeFilters.insert(filter)
+            selectedFilters.insert(type)
+            // Trigger a fetch for this new category in the current grid
+            updateVisibleGridAndFetchData()
         }
-        applyFilters()
     }
     
-    func toggleWomenInSportsFilter() {
-        showWomenInSportsOnly.toggle()
-        applyFilters()
-    }
-    
-    private func applyFilters() {
-        var tempLocations = allLocations
-        
-        if !activeFilters.isEmpty {
-            tempLocations = tempLocations.filter { activeFilters.contains($0.type) }
-        }
-        
-        if showWomenInSportsOnly {
-            tempLocations = tempLocations.filter { $0.promotesWomenInSports }
-        }
-        
-        self.filteredLocations = tempLocations
+    /// Generates a unique key for a grid cell.
+    private func gridKey(for coordinate: CLLocationCoordinate2D) -> String {
+        let latIndex = Int(coordinate.latitude * 100)
+        let lonIndex = Int(coordinate.longitude * 100)
+        return "\(latIndex)-\(lonIndex)"
     }
 }

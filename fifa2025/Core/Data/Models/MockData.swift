@@ -58,8 +58,8 @@ struct MockData {
             points: 2500,
             streak: 5,
             completedChallenges: [
-                Challenge(id: UUID(), title: "Local Taster", description: "Visit a local restaurant", pointsAwarded: 50, completionDate: Date().addingTimeInterval(-86400 * 2)),
-                Challenge(id: UUID(), title: "Cultural Explorer", description: "Visit a museum", pointsAwarded: 100, completionDate: Date().addingTimeInterval(-86400 * 5))
+                Challenge(id: UUID(), title: "Local Taster", isCompleted: true, description: "Visit a local restaurant", pointsAwarded: 50, completionDate: Date().addingTimeInterval(-86400 * 2)),
+                Challenge(id: UUID(), title: "Cultural Explorer", isCompleted: false, description: "Visit a museum", pointsAwarded: 100, completionDate: Date().addingTimeInterval(-86400 * 5))
             ],
             visits: [
                 Visit(id: UUID(), location: locations[0], date: Date().addingTimeInterval(-86400), rating: 5, comment: "An absolutely iconic and historic venue! The energy is palpable."),
@@ -67,6 +67,13 @@ struct MockData {
                 Visit(id: UUID(), location: locations[2], date: Date().addingTimeInterval(-86400 * 7), rating: 5, comment: "A beautiful and inspiring place. A must-see in Mexico City.")
             ]
         )
+    
+    static let challengesAvailable: [Challenge] = [
+        .init(id: UUID(), title: "Local Taster", isCompleted: false, description: "Visit a local restaurant", pointsAwarded: 50, completionDate: nil),
+        .init(id: UUID(), title: "Cultural Explorer", isCompleted: false, description: "Visit a museum", pointsAwarded: 100, completionDate: nil),
+        .init(id: UUID(), title: "Foodie's Delight", isCompleted: false, description: "Try a new cuisine", pointsAwarded: 150, completionDate: nil)
+    ]
+    
 }
 
 

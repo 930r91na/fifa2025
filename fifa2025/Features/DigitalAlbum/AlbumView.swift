@@ -11,6 +11,10 @@ struct AlbumView: View {
         NavigationView {
             Text("Your digital album of memories")
                 .navigationTitle(Text("Albums"))
+            ZStack {
+                Color("BackgroudColor").ignoresSafeArea()
+                    
+            }
         }
     }
 }

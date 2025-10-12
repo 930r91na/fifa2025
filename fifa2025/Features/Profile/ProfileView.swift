@@ -13,7 +13,7 @@ struct ProfileView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: 5) {
                     ProfileHeaderView(user: viewModel.user)
                     
                     GamificationStatsView(points: viewModel.user.points, streak: viewModel.user.streak)
@@ -24,9 +24,7 @@ struct ProfileView: View {
                 }
                 .padding()
             }
-            .background(Color.theme.background)
-            .navigationTitle("My Profile")
-            .navigationBarTitleDisplayMode(.inline)
+            .background(Color.secondaryBackground)
         }
     }
 }
@@ -40,19 +38,19 @@ struct ProfileHeaderView: View {
         HStack {
             Image(systemName: user.profileImageName)
                 .font(.system(size: 60))
-                .foregroundColor(Color.theme.fifaAqua)
+                .foregroundColor(Color.fifaCompAqua)
             
             VStack(alignment: .leading) {
                 Text(user.name)
                     .font(Font.theme.largeTitle)
-                    .foregroundColor(Color.theme.primaryText)
+                    .foregroundColor(Color.primaryText)
                 
                 HStack {
                     Image(systemName: "flag.fill")
                     Text("Supporting: \(user.teamPreference)")
                 }
                 .font(Font.theme.subheadline)
-                .foregroundColor(Color.theme.secondaryText)
+                .foregroundColor(Color.secondaryText)
             }
             Spacer()
         }
@@ -65,8 +63,8 @@ struct GamificationStatsView: View {
     
     var body: some View {
         HStack {
-            StatCard(title: "Total Points", value: "\(points) pts", icon: "star.fill", color: Color.theme.fifaLime)
-            StatCard(title: "Current Streak", value: "\(streak) Days", icon: "flame.fill", color: Color.theme.fifaRed)
+            StatCard(title: "Total Points", value: "\(points) pts", icon: "star.fill", color: Color.fifaCompLime)
+            StatCard(title: "Current Streak", value: "\(streak) Days", icon: "flame.fill", color: Color.fifaCompRed)
         }
     }
 }
@@ -84,16 +82,16 @@ struct StatCard: View {
                     .foregroundColor(color)
                 Text(title)
                     .font(Font.theme.caption)
-                    .foregroundColor(Color.theme.secondaryText)
+                    .foregroundColor(Color.secondaryText)
                 Spacer()
             }
             Text(value)
                 .font(Font.theme.headline)
-                .foregroundColor(Color.theme.primaryText)
+                .foregroundColor(Color.primaryText)
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .background(Color.theme.secondaryBackground.opacity(0.5))
+        .background(Color.secondaryBackground.opacity(0.5))
         .cornerRadius(16)
     }
 }
@@ -105,7 +103,7 @@ struct RecentActivityView: View {
         VStack(alignment: .leading) {
             Text("Recent Activity")
                 .font(Font.theme.headline)
-                .foregroundColor(Color.theme.primaryText)
+                .foregroundColor(Color.primaryText)
                 .padding(.horizontal)
             
             ForEach(visits) { visit in
@@ -113,7 +111,7 @@ struct RecentActivityView: View {
             }
         }
         .padding()
-        .background(Color.theme.secondaryBackground.opacity(0.5))
+        .background(Color.secondaryBackground.opacity(0.5))
         .cornerRadius(16)
     }
 }
@@ -126,11 +124,11 @@ struct VisitRow: View {
             HStack {
                 Text(visit.location.name)
                     .font(Font.theme.subheadline)
-                    .foregroundColor(Color.theme.primaryText)
+                    .foregroundColor(Color.primaryText)
                 Spacer()
                 Text(visit.date, style: .date)
                     .font(Font.theme.caption)
-                    .foregroundColor(Color.theme.secondaryText)
+                    .foregroundColor(Color.secondaryText)
             }
             
             HStack {
@@ -144,7 +142,7 @@ struct VisitRow: View {
                 Text("\"\(comment)\"")
                     .font(Font.theme.body)
                     .italic()
-                    .foregroundColor(Color.theme.secondaryText)
+                    .foregroundColor(Color.secondaryText)
             }
         }
         .padding(.vertical, 8)
@@ -158,7 +156,7 @@ struct CompletedChallengesView: View {
         VStack(alignment: .leading) {
             Text("Completed Challenges")
                 .font(Font.theme.headline)
-                .foregroundColor(Color.theme.primaryText)
+                .foregroundColor(Color.primaryText)
                 .padding(.horizontal)
             
             ForEach(challenges) { challenge in
@@ -166,7 +164,7 @@ struct CompletedChallengesView: View {
             }
         }
         .padding()
-        .background(Color.theme.secondaryBackground.opacity(0.5))
+        .background(Color.secondaryBackground.opacity(0.5))
         .cornerRadius(16)
     }
 }
@@ -177,22 +175,22 @@ struct ChallengeRow: View {
     var body: some View {
         HStack {
             Image(systemName: "checkmark.seal.fill")
-                .foregroundColor(Color.theme.fifaGreen)
+                .foregroundColor(Color.fifaCompGreen)
             
             VStack(alignment: .leading) {
                 Text(challenge.title)
                     .font(Font.theme.subheadline)
-                    .foregroundColor(Color.theme.primaryText)
+                    .foregroundColor(Color.primaryText)
                 Text(challenge.description)
                     .font(Font.theme.caption)
-                    .foregroundColor(Color.theme.secondaryText)
+                    .foregroundColor(Color.secondaryText)
             }
             
             Spacer()
             
             Text("+\(challenge.pointsAwarded) pts")
                 .font(Font.theme.subheadline)
-                .foregroundColor(Color.theme.fifaLime)
+                .foregroundColor(Color.fifaCompLime)
         }
         .padding(.vertical, 8)
     }

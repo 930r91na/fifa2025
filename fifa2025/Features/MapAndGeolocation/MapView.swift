@@ -17,6 +17,7 @@ struct MapView: View {
     
     var body: some View {
         ZStack(alignment: .top) {
+            Color("BackgroudColor").ignoresSafeArea()
             // The main map view
             Map(coordinateRegion: $viewModel.mapRegion,
                 showsUserLocation: true,
@@ -33,7 +34,7 @@ struct MapView: View {
                 }
             }
             .ignoresSafeArea()
-            .tint(Color.theme.fifaRed) // Use theme color for user location dot
+            .tint(Color.fifaCompRed) // Use theme color for user location dot
             
             // UI Overlays
             VStack {
@@ -176,10 +177,10 @@ struct LocationDetailView: View {
                 VStack(alignment: .leading) {
                     Text(location.name)
                         .font(.largeTitle.weight(.bold))
-                        .foregroundColor(Color.theme.primaryText)
+                        .foregroundColor(Color.primaryText)
                     Text(location.description) // Business Category
                         .font(.headline)
-                        .foregroundColor(Color.theme.secondaryText)
+                        .foregroundColor(Color.secondaryText)
                 }
                                 
                 // Address (only shows if available and not empty)
@@ -210,7 +211,7 @@ struct LocationDetailView: View {
             }
             .padding(30)
         }
-        .background(Color.theme.secondaryBackground)
+        .background(Color.secondaryBackground)
         .ignoresSafeArea()
     }
 }
@@ -233,7 +234,7 @@ struct LocationDeniedView: View {
                     UIApplication.shared.open(url)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(Color.theme.fifaRed)
+                .tint(Color.fifaCompRed)
                 .padding(.top)
             }
         }
@@ -258,7 +259,7 @@ struct InfoRow: View {
             Image(systemName: icon)
                 .font(.title3)
                 .frame(width: 25)
-                .foregroundColor(Color.theme.fifaRed)
+                .foregroundColor(Color.fifaCompRed)
             
             VStack(alignment: .leading) {
                 Text(title)

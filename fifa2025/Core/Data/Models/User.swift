@@ -37,7 +37,8 @@ struct Visit: Identifiable {
 struct Challenge: Identifiable {
     let id: UUID
     let title: String
+    let isCompleted: Bool
     let description: String
     let pointsAwarded: Int
-    let completionDate: Date
+    let completionDate: Date?
 }

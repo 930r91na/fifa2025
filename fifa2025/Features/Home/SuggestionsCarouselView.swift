@@ -1,46 +1,133 @@
 //
-//  SuggestionsCarouselView.swift
+//  ExploreCityView.swift
 //  fifa2025
 //
-//  Created by Georgina on 09/10/25.
+//  Created by Georgina on 12/10/25.
 //
 
 import SwiftUI
 
-struct SuggestionCarouselView: View {
-    let suggestions: [ItinerarySuggestion]
+struct ExploreCityView: View {
     @ObservedObject var viewModel: HomeViewModel
     @State private var currentIndex: Int = 0
+    @State private var dragOffset: CGFloat = 0
 
     var body: some View {
         ZStack {
-            // MARK: - Background Image Carousel
-            TabView(selection: $currentIndex) {
-                ForEach(suggestions.indices, id: \.self) { index in
-                    Image(suggestions[index].location.imageName)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .tag(index)
-                }
-            }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .blur(radius: 15, opaque: true)
-            .opacity(0.6)
+            Color.secondaryBackground.opacity(0.5)
+                .cornerRadius(16)
+                .ignoresSafeArea()
             
-            Rectangle()
-                .fill(.black.opacity(0.4))
-
-            // MARK: - Foreground Card Carousel
-            TabView(selection: $currentIndex) {
-                ForEach(suggestions.indices, id: \.self) { index in
-                    SuggestionCardView(suggestion: suggestions[index], viewModel: viewModel)
-                        .tag(index)
-                        .padding(.horizontal, 40) // Creates space for background to peek through
+            VStack(spacing: 16) {
+                // Header
+                HStack(spacing: 10) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 20))
+                        .foregroundColor(.white)
+                    
+                    Text("Explora la ciudad")
+                        .font(.system(size: 30, weight: .medium))
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal,18)
+                .padding(.top, 20)
+                
+                Text("Te recomendamos los mejores\nmomentos de acuerdo a tu calendario.")
+                    .font(.system(size: 15))
+                    .foregroundColor(.white.opacity(0.9))
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 53)
+                    .padding(.top, -10)
+                
+                if viewModel.suggestions.isEmpty {
+                     NoSuggestionsView()
+                        .frame(height: 300)
+                } else {
+                    // Carousel
+                    GeometryReader { geometry in
+                        let cardWidth = geometry.size.width * 0.85
+                        let peekAmount: CGFloat = 50
+                        
+                        ZStack {
+                            ForEach(Array(viewModel.suggestions.enumerated()), id: \.element.id) { index, suggestion in
+                                let distance = CGFloat(index - currentIndex)
+                                let offset = distance * (cardWidth - peekAmount) + dragOffset
+                                let scale = getScale(for: index)
+                                let opacity = getOpacity(for: index)
+                                
+                                SuggestionCard(suggestion: suggestion, viewModel: viewModel)
+                                    .frame(width: cardWidth)
+                                    .scaleEffect(scale)
+                                    .opacity(opacity)
+                                    .offset(x: offset)
+                                    .zIndex(index == currentIndex ? 10 : Double(5 - abs(index - currentIndex)))
+                            }
+                        }
+                        .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
+                        .gesture(
+                            DragGesture()
+                                .onChanged { value in
+                                    dragOffset = value.translation.width
+                                }
+                                .onEnded { value in
+                                    let threshold: CGFloat = 50
+                                    
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                        if value.translation.width < -threshold && currentIndex < viewModel.suggestions.count - 1 {
+                                            currentIndex += 1
+                                        } else if value.translation.width > threshold && currentIndex > 0 {
+                                            currentIndex -= 1
+                                        }
+                                        dragOffset = 0
+                                    }
+                                }
+                        )
+                    }
+                    .padding(.top, -55)
+                    .frame(height: 530)
+                    .clipped()
+                    
+                    // Indicators
+                    HStack(spacing: 12) {
+                        ForEach(0..<viewModel.suggestions.count, id: \.self) { index in
+                            Circle()
+                                .fill(index == currentIndex ? Color.white : Color.white.opacity(0.4))
+                                .frame(width: index == currentIndex ? 10 : 8, height: index == currentIndex ? 10 : 8)
+                                .animation(.easeInOut(duration: 0.3), value: currentIndex)
+                        }
+                    }
+                    .padding(.top, -50)
+                    .padding(.bottom, 20) // Adjusted padding
                 }
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
         }
-        .ignoresSafeArea()
+        .frame(height: 600) // Give the ZStack a consistent height
+    }
+    
+    private func getScale(for index: Int) -> CGFloat {
+        let distance = abs(currentIndex - index)
+        if distance == 0 {
+            return 1.0
+        } else if distance == 1 {
+            return 0.85
+        } else {
+            return 0.7
+        }
+    }
+    
+    private func getOpacity(for index: Int) -> Double {
+        let distance = abs(currentIndex - index)
+        if distance == 0 {
+            return 1.0
+        } else if distance == 1 {
+            return 0.5
+        } else {
+            return 0.0
+        }
     }
 }
+
 

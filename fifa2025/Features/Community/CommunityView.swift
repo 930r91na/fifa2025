@@ -9,9 +9,12 @@ import SwiftUI
 
 struct CommunityView: View {
     var body: some View {
+        
         NavigationView {
+            Color("BackgroudColor").ignoresSafeArea()
             Text("Community leaderboard and teams will be here.")
                 .navigationTitle(Text("Community"))
+            
         }
     }
 }

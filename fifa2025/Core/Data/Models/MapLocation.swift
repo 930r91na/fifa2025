@@ -47,11 +47,28 @@ enum LocationType: Int, CaseIterable, Identifiable {
 
 // Model for a single location on the map
 struct MapLocation: Identifiable {
-    let id = UUID()
+    let id: UUID
     let name: String
     let type: LocationType
     let coordinate: CLLocationCoordinate2D
     let description: String
     let imageName: String
     let promotesWomenInSports: Bool
+    
+    let address: String?
+    let phoneNumber: String?
+    let website: String?
+
+    init(id: UUID = UUID(), name: String, type: LocationType, coordinate: CLLocationCoordinate2D, description: String, imageName: String, promotesWomenInSports: Bool, address: String? = nil, phoneNumber: String? = nil, website: String? = nil) {
+        self.id = id
+        self.name = name
+        self.type = type
+        self.coordinate = coordinate
+        self.description = description
+        self.imageName = imageName
+        self.promotesWomenInSports = promotesWomenInSports
+        self.address = address
+        self.phoneNumber = phoneNumber
+        self.website = website
+    }
 }

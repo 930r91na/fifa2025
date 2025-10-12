@@ -16,7 +16,8 @@ struct MockData {
             coordinate: CLLocationCoordinate2D(latitude: 19.3028, longitude: -99.1504),
             description: "Iconic stadium, host of the 1970 and 1986 World Cup finals. Also hosted the final of the 1971 Women's World Cup.",
             imageName: "estadio_azteca",
-            promotesWomenInSports: true
+            promotesWomenInSports: true            
+            
         ),
         MapLocation(
             name: "Tacos Chupacabras",
@@ -43,4 +44,11 @@ struct MockData {
             promotesWomenInSports: true
         )
     ]
+    
+    static func randomMockImage() -> String {
+        let imageNames = ["estadio_azteca", "tacos_chupacabras", "mercado_coyoacan", "museo_frida"]
+        return imageNames.randomElement() ?? "mercado_coyoacan"
+    }
 }
+
+

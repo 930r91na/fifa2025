@@ -8,6 +8,9 @@
 import SwiftUI
 import MapKit
 
+import SwiftUI
+import MapKit
+
 struct MapView: View {
     
     @StateObject private var viewModel = MapViewModel()
@@ -30,6 +33,7 @@ struct MapView: View {
                 }
             }
             .ignoresSafeArea()
+            .tint(Color.theme.fifaRed) // Use theme color for user location dot
             
             // UI Overlays
             VStack {
@@ -62,7 +66,25 @@ struct MapView: View {
         }
         .sheet(item: $viewModel.selectedLocation) { location in
             LocationDetailView(location: location)
-                .presentationDetents([.height(250), .medium])
+                .presentationDetents([.height(300), .medium])
+        }
+        .overlay {
+            if viewModel.isLoading {
+                ProgressView("Finding local spots...")
+                    .padding()
+                    .background(.ultraThickMaterial)
+                    .cornerRadius(10)
+            } else if let errorMessage = viewModel.errorMessage {
+                 // You can create a more elaborate error view
+                Text(errorMessage)
+                    .padding()
+                    .background(.ultraThickMaterial)
+                    .cornerRadius(10)
+                    .foregroundColor(.red)
+            } else if viewModel.locationStatus == .denied {
+                 // New view to guide the user
+                LocationDeniedView()
+            }
         }
     }
 }
@@ -143,31 +165,119 @@ struct FilterButtonStyle: ButtonStyle {
 }
 
 
+// This replaces the old LocationDetailView at the bottom of the file
 struct LocationDetailView: View {
     let location: MapLocation
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(location.name)
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
-            Text(location.description)
-                .font(.body)
-                .foregroundColor(.secondary)
-            
-            if location.promotesWomenInSports {
-                HStack {
-                    Image(systemName: "star.fill")
-                        .foregroundColor(.yellow)
-                    Text("This location highlights women in sports.")
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                // Header
+                VStack(alignment: .leading) {
+                    Text(location.name)
+                        .font(.largeTitle.weight(.bold))
+                        .foregroundColor(Color.theme.primaryText)
+                    Text(location.description) // Business Category
                         .font(.headline)
+                        .foregroundColor(Color.theme.secondaryText)
+                }
+                                
+                // Address (only shows if available and not empty)
+                if let address = location.address, !address.isEmpty {
+                    InfoRow(icon: "mappin.and.ellipse", title: "Address", content: address)
+                }
+                
+                // Phone Number (only shows if available and not empty)
+                if let phoneNumber = location.phoneNumber, !phoneNumber.isEmpty {
+                    InfoRow(icon: "phone.fill", title: "Phone", content: phoneNumber, isLink: true, linkURL: "tel:\(phoneNumber)")
+                }
+                
+                // Website (only shows if available and not empty)
+                if let website = location.website, !website.isEmpty {
+                    // A basic check to ensure the URL is valid
+                    let validUrlString = website.hasPrefix("http") ? website : "http://\(website)"
+                    InfoRow(icon: "safari.fill", title: "Website", content: website, isLink: true, linkURL: validUrlString)
+                }
+
+                // Women in sports highlight
+                if location.promotesWomenInSports {
+                    HStack {
+                        Image(systemName: "star.fill").foregroundColor(.yellow)
+                        Text("This location highlights women in sports.").font(.headline)
+                    }
+                    .padding(.top)
                 }
             }
+            .padding(30)
+        }
+        .background(Color.theme.secondaryBackground)
+        .ignoresSafeArea()
+    }
+}
+
+struct LocationDeniedView: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "location.slash.fill")
+                .font(.largeTitle)
+            Text("Location Access Denied")
+                .font(.headline)
+            Text("Displaying spots in Mexico City by default. To see places near you, please enable location services.")
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .foregroundColor(.secondary)
             
+            // Button to open app settings
+            if let url = URL(string: UIApplication.openSettingsURLString) {
+                Button("Open Settings") {
+                    UIApplication.shared.open(url)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Color.theme.fifaRed)
+                .padding(.top)
+            }
+        }
+        .padding(30)
+        .background(.ultraThickMaterial)
+        .cornerRadius(16)
+        .padding()
+    }
+}
+
+struct InfoRow: View {
+    let icon: String
+    let title: String
+    let content: String
+    var isLink: Bool = false
+    var linkURL: String? = nil
+    
+    @Environment(\.openURL) var openURL
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 16) {
+            Image(systemName: icon)
+                .font(.title3)
+                .frame(width: 25)
+                .foregroundColor(Color.theme.fifaRed)
+            
+            VStack(alignment: .leading) {
+                Text(title)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                if isLink, let urlString = linkURL, let url = URL(string: urlString) {
+                    Button(action: { openURL(url) }) {
+                        Text(content)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.accentColor)
+                    }
+                } else {
+                    Text(content)
+                        .fontWeight(.semibold)
+                }
+            }
             Spacer()
         }
-        .padding()
     }
 }
 

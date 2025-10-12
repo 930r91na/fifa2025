@@ -10,40 +10,127 @@ import MapKit
 import Combine
 import SwiftUI
 
+@MainActor
 class MapViewModel: ObservableObject {
     
     // MARK: - Published Properties
     @Published var mapRegion: MKCoordinateRegion
-    @Published var allLocations: [MapLocation] = MockData.locations
-    @Published var filteredLocations: [MapLocation] = []
+    @Published var filteredLocations: [MapLocation] = [] // Reverted to MapLocation
     @Published var selectedLocation: MapLocation?
+    @Published var locationStatus: CLAuthorizationStatus
     
     @Published var activeFilters: Set<LocationType> = Set(LocationType.allCases)
     @Published var showWomenInSportsOnly = false
     
-    // MARK: - Location Properties
+    // UI State
+    @Published var isLoading = false
+    @Published var errorMessage: String?
+
+    // Services and Location Properties
+    private let denueService = DENUEService()
     private let locationManager = LocationManager()
     private var cancellables = Set<AnyCancellable>()
-    private var didCenterOnUser = false
+    private var allLocations: [MapLocation] = []
 
     // MARK: - Initializer
     init() {
-        // Default region (will be updated to user's location)
-        self.mapRegion = MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 19.4326, longitude: -99.1332),
-            span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
-        )
-        self.filteredLocations = allLocations
+        let defaultCenter = CLLocationCoordinate2D(latitude: 19.4326, longitude: -99.1332)
+        self.mapRegion = MKCoordinateRegion(center: defaultCenter, span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05))
+        self.locationStatus = locationManager.authorizationStatus
         
-        // Subscribe to location updates
-        locationManager.$location
-            .compactMap { $0 }
-            .first() // Only take the first valid location to center the map
+        setupMapRegionDebouncing()
+        fetchDataForCurrentStatus()
+        
+        locationManager.$authorizationStatus
+            .dropFirst()
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] location in
-                self?.centerOnUserLocation(location.coordinate)
+            .sink { [weak self] status in
+                self?.locationStatus = status
+                self?.fetchDataForCurrentStatus()
             }
             .store(in: &cancellables)
+    }
+    
+    // MARK: - Dynamic Data Fetching
+    private func setupMapRegionDebouncing() {
+        $mapRegion
+            .debounce(for: .seconds(0.75), scheduler: DispatchQueue.main)
+            .sink { [weak self] newRegion in
+                self?.loadBusinessesFor(region: newRegion)
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func loadBusinessesFor(region: MKCoordinateRegion) {
+        isLoading = true
+        Task {
+            let edgeLocation = CLLocation(latitude: region.center.latitude, longitude: region.center.longitude + region.span.longitudeDelta / 2)
+            let centerLocation = CLLocation(latitude: region.center.latitude, longitude: region.center.longitude)
+            let radiusInMeters = Int(edgeLocation.distance(from: centerLocation))
+
+            await loadBusinesses(near: region.center, radius: radiusInMeters)
+            isLoading = false
+        }
+    }
+    
+    // MARK: - Core Logic with Capping
+    private func loadBusinesses(near coordinate: CLLocationCoordinate2D, radius: Int) async {
+        errorMessage = nil
+        do {
+            let businesses = try await denueService.fetchBusinesses(near: coordinate, radiusInMeters: radius)
+            // ---- CAPPING LOGIC IS APPLIED HERE ----
+            self.allLocations = capBusinesses(businesses, for: self.mapRegion)
+            self.applyFilters()
+        } catch {
+            self.errorMessage = "Could not load local businesses. Please check your connection."
+            print("Error fetching businesses: \(error)")
+        }
+    }
+    
+    // This new function limits the results based on zoom level
+    private func capBusinesses(_ businesses: [MapLocation], for region: MKCoordinateRegion) -> [MapLocation] {
+        let zoomLevel = region.span.latitudeDelta
+        let limit: Int
+        
+        if zoomLevel > 0.2 {       // Very zoomed out
+            limit = 75
+        } else if zoomLevel > 0.05 { // Medium zoom
+            limit = 200
+        } else {                     // Zoomed in
+            limit = 400 // A safe upper limit for SwiftUI Map
+        }
+        
+        if businesses.count > limit {
+            print("Original count: \(businesses.count), capped to: \(limit)")
+            return Array(businesses.prefix(limit))
+        } else {
+            return businesses
+        }
+    }
+    
+    // MARK: - Core Logic
+    func fetchDataForCurrentStatus() {
+        isLoading = true
+        Task {
+            if locationManager.isAuthorized(), let location = await userLocation() {
+                self.mapRegion.center = location.coordinate
+                // The debouncer will automatically trigger the first load
+            } else {
+                // Load default data if no permission
+                await loadDataForDefaultLocation()
+            }
+            isLoading = false
+        }
+    }
+    
+    private func loadDataForDefaultLocation() async {
+        let defaultCoordinate = CLLocationCoordinate2D(latitude: 19.4326, longitude: -99.1332)
+        self.mapRegion.center = defaultCoordinate
+    }
+
+    private func userLocation() async -> CLLocation? {
+        let locationsSequence = locationManager.$location.compactMap { $0 }.values
+        return await locationsSequence.first(where: { _ in true })
     }
     
     // MARK: - Methods
@@ -80,18 +167,14 @@ class MapViewModel: ObservableObject {
     private func applyFilters() {
         var tempLocations = allLocations
         
-        // Category filters
-        tempLocations = tempLocations.filter { location in
-            activeFilters.contains(location.type)
+        if !activeFilters.isEmpty {
+            tempLocations = tempLocations.filter { activeFilters.contains($0.type) }
         }
         
-        // Women in sports filter
         if showWomenInSportsOnly {
             tempLocations = tempLocations.filter { $0.promotesWomenInSports }
         }
         
-        withAnimation {
-            filteredLocations = tempLocations
-        }
+        self.filteredLocations = tempLocations
     }
 }

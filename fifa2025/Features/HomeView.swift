@@ -18,7 +18,7 @@ struct HomeView: View {
                 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        HeaderGreetingView(name: "Juan")
+                        HeaderGreetingView(name: "Geo")
                                     
                         ScoreView(points: 1250)
                                     

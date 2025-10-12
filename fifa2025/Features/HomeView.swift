@@ -9,6 +9,7 @@ internal import EventKit
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
+    @StateObject private var communityVM = CommunityViewModel()
     
     var body: some View {
         NavigationView {
@@ -24,7 +25,7 @@ struct HomeView: View {
                         
                         ExploreCityView(viewModel: viewModel)
                         
-                        DailyChallengeView()
+                        DailyChallengeView(communityVM: communityVM)
                     }
                     .padding()
                 }
@@ -222,11 +223,13 @@ struct CalendarAccessPromptView: View {
 
 
 struct DailyChallengeView: View {
-    @State private var challenges: [Challenge] = MockData.challengesAvailable;
-    
+    @State private var challenges: [Challenge] = MockData.challengesAvailable
     @State private var showPointsAnimation = false
     @State private var earnedPoints = 0
     @State private var totalPoints = 0
+    @State private var showChallengePopup = false
+    @State private var selectedChallengeIndex: Int?
+    @ObservedObject var communityVM: CommunityViewModel
     
     var completedChallenges: Int {
         challenges.filter { $0.isCompleted }.count
@@ -248,24 +251,20 @@ struct DailyChallengeView: View {
                     
                     Spacer()
                     
-                    
-                    
                     Text("\(completedChallenges)/\(challenges.count)")
                         .font(Font.theme.caption)
                 }
                 .foregroundColor(Color.primaryText)
                 .padding(.bottom, 10)
                 
-                
-                
-                // ScrollView horizontal para las tarjetas
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 15) {
                         ForEach(Array(challenges.enumerated()), id: \.element.id) { index, challenge in
                             ChallengeCard(
                                 challenge: challenge,
                                 onComplete: {
-                                    completeChallenge(at: index)
+                                    selectedChallengeIndex = index
+                                    showChallengePopup = true
                                 }
                             )
                         }
@@ -279,32 +278,58 @@ struct DailyChallengeView: View {
                     .frame(width: 350, height: 60)
             }
             .padding()
-            .padding(.top,20)
+            .padding(.top, 20)
             .background(Color.secondaryBackground.opacity(0.5))
             .cornerRadius(16)
+            .blur(radius: showChallengePopup ? 3 : 0)
             
-            // Animación de puntos ganados
+            if showChallengePopup, let index = selectedChallengeIndex {
+                ChallengePopupView(
+                    challenge: challenges[index],
+                    onDismiss: {
+                        showChallengePopup = false
+                        selectedChallengeIndex = nil
+                    },
+                    onComplete: { photo, review in
+                        completeChallenge(at: index, photo: photo, review: review)
+                        showChallengePopup = false
+                        selectedChallengeIndex = nil
+                    }
+                )
+                .transition(.scale.combined(with: .opacity))
+                .zIndex(2)
+            }
+            
             if showPointsAnimation {
                 PointsAnimationView(points: earnedPoints)
                     .transition(.scale.combined(with: .opacity))
-                    .zIndex(1)
+                    .zIndex(3)
             }
         }
     }
     
-    private func completeChallenge(at index: Int) {
+    private func completeChallenge(at index: Int, photo: UIImage, review: String) {
         guard !challenges[index].isCompleted else { return }
         
-        // Obtener puntos ganados
+        challenges[index].isCompleted = true
+        challenges[index].completionDate = Date()
+        challenges[index].photoEvidence = photo
+        challenges[index].review = review
+        
+        // Crear post automáticamente
+        communityVM.addChallengePost(
+            challengeTitle: challenges[index].title,
+            photo: photo,
+            review: review
+        )
+        
         earnedPoints = challenges[index].pointsAwarded
         totalPoints += earnedPoints
         
-        // Mostrar animación
         withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
             showPointsAnimation = true
         }
         
-        // Ocultar animación después de 2 segundos
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             withAnimation {
                 showPointsAnimation = false
@@ -312,7 +337,6 @@ struct DailyChallengeView: View {
         }
     }
 }
-
 
 #Preview {
     HomeView()

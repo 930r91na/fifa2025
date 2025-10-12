@@ -55,16 +55,32 @@ struct MockData {
     }
     
     static let user = User(
-            id: UUID(),
-            name: "Juan",
-            profileImageName: "person.crop.circle",
-            teamPreference: "Mexico",
-            points: 2500,
-            streak: 5,
-            completedChallenges: [
-                Challenge(id: UUID(), title: "Local Taster", isCompleted: true, description: "Visit a local restaurant", pointsAwarded: 50, completionDate: Date().addingTimeInterval(-86400 * 2)),
-                Challenge(id: UUID(), title: "Cultural Explorer", isCompleted: false, description: "Visit a museum", pointsAwarded: 100, completionDate: Date().addingTimeInterval(-86400 * 5))
-            ],
+        id: UUID(),
+        name: "Juan",
+        profileImageName: "person.crop.circle",
+        teamPreference: "Mexico",
+        points: 2500,
+        streak: 5,
+        completedChallenges: [
+            Challenge(
+                id: UUID(),
+                title: "Local Taster",
+                isCompleted: true,
+                description: "Visit a local restaurant",
+                detailedDescription: "Visita un restaurante local, toma una foto de evidencia y deja una reseña.",
+                pointsAwarded: 50,
+                completionDate: Date().addingTimeInterval(-86400 * 2)
+            ),
+            Challenge(
+                id: UUID(),
+                title: "Cultural Explorer",
+                isCompleted: false,
+                description: "Visit a museum",
+                detailedDescription: "Explora un museo o sitio cultural y comparte tu experiencia.",
+                pointsAwarded: 100,
+                completionDate: Date().addingTimeInterval(-86400 * 5)
+            )
+        ],
             visits: [
                 Visit(id: UUID(), location: locations[0], date: Date().addingTimeInterval(-86400), rating: 5, comment: "An absolutely iconic and historic venue! The energy is palpable."),
                 Visit(id: UUID(), location: locations[1], date: Date().addingTimeInterval(-86400 * 3), rating: 4, comment: "Delicious tacos, a truly authentic experience."),
@@ -73,10 +89,34 @@ struct MockData {
         )
     
     static let challengesAvailable: [Challenge] = [
-        .init(id: UUID(), title: "Local Taster", isCompleted: false, description: "Visit a local restaurant", pointsAwarded: 50, completionDate: nil),
-        .init(id: UUID(), title: "Cultural Explorer", isCompleted: false, description: "Visit a museum", pointsAwarded: 100, completionDate: nil),
-        .init(id: UUID(), title: "Foodie's Delight", isCompleted: false, description: "Try a new cuisine", pointsAwarded: 150, completionDate: nil)
-    ]
+            .init(
+                id: UUID(),
+                title: "Local Taster",
+                isCompleted: false,
+                description: "Visit a local restaurant",
+                detailedDescription: "Visita un restaurante local, toma una foto de evidencia y deja una reseña para compartir con la comunidad. ¡Tu experiencia inspirará a otros!",
+                pointsAwarded: 50,
+                completionDate: nil
+            ),
+            .init(
+                id: UUID(),
+                title: "Cultural Explorer",
+                isCompleted: false,
+                description: "Visit a museum",
+                detailedDescription: "Explora un museo o sitio cultural, captura el momento con una foto y comparte tu experiencia con una reseña detallada.",
+                pointsAwarded: 100,
+                completionDate: nil
+            ),
+            .init(
+                id: UUID(),
+                title: "Foodie's Delight",
+                isCompleted: false,
+                description: "Try a new cuisine",
+                detailedDescription: "Atrévete a probar una cocina nueva, fotografía el platillo y cuéntanos qué te pareció en una reseña.",
+                pointsAwarded: 150,
+                completionDate: nil
+            )
+        ]
     
 }
 

@@ -9,10 +9,16 @@ import SwiftUI
 
 @main
 struct fifa2025App: App {
+    @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .foregroundColor(Color.backgroud)
+            if hasCompletedOnboarding {
+                ContentView()
+                    .foregroundColor(Color("BackgroudColor"))
+            } else {
+                OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
+            }
         }
     }
 }

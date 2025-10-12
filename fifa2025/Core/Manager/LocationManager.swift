@@ -14,6 +14,9 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
     private let locationManager = CLLocationManager()
 
+    // Mock location for Mexico City (Zocalo)
+    private let mockMexicoCityLocation = CLLocation(latitude: 19.4326, longitude: -99.1332)
+
     override init() {
         super.init()
         locationManager.delegate = self
@@ -36,11 +39,18 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         locationManager.requestWhenInUseAuthorization()
     }
 
-
-
+    // Call this for real location updates
     func startUpdatesIfNeeded() {
         if isAuthorized() {
             locationManager.startUpdatingLocation()
+        }
+    }
+    
+    // Call this to use the mock location for testing
+    func startUpdatingLocationWithMock() {
+        DispatchQueue.main.async {
+            self.location = self.mockMexicoCityLocation
+            print("Using mock location: Mexico City")
         }
     }
 
@@ -59,6 +69,8 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         DispatchQueue.main.async {
             self.authorizationStatus = manager.authorizationStatus
+            // If the user grants permission, you might want to start updates.
+            // For testing with mock data, you can decide whether to call startUpdatesIfNeeded() or startUpdatingLocationWithMock()
         }
     }
     

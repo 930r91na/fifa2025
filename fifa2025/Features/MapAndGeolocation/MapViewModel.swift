@@ -54,7 +54,7 @@ class MapViewModel: ObservableObject {
     // MARK: - Dynamic Data Fetching
     private func setupMapRegionDebouncing() {
         $mapRegion
-            .debounce(for: .seconds(0.75), scheduler: DispatchQueue.main)
+            .debounce(for: .seconds(1.5), scheduler: DispatchQueue.main)
             .sink { [weak self] newRegion in
                 self?.loadBusinessesFor(region: newRegion)
             }
@@ -93,11 +93,11 @@ class MapViewModel: ObservableObject {
         let limit: Int
         
         if zoomLevel > 0.2 {       // Very zoomed out
-            limit = 75
+            limit = 50
         } else if zoomLevel > 0.05 { // Medium zoom
-            limit = 200
+            limit = 100
         } else {                     // Zoomed in
-            limit = 400 // A safe upper limit for SwiftUI Map
+            limit = 220
         }
         
         if businesses.count > limit {

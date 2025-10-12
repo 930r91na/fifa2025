@@ -19,6 +19,9 @@ class HomeViewModel: ObservableObject {
     private let locationManager = LocationManager()
     private var cancellables = Set<AnyCancellable>()
     
+    // MARK: - Debugging Flag
+    private let useMockLocation = true
+    
     init() {
         self.calendarAuthorizationStatus = calendarManager.authorizationStatus
         

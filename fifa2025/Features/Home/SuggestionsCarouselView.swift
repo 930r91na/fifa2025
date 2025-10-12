@@ -32,15 +32,16 @@ struct ExploreCityView: View {
                     Spacer()
                 }
                 .padding(.horizontal,18)
-                .padding(.top, 20)
+                .padding(.top, 10)
                 
-                Text("Te recomendamos los mejores\nmomentos de acuerdo a tu calendario.")
+                Text("Te recomendamos los mejores \n lugares de acuerdo a tu calendario.")
                     .font(.system(size: 15))
                     .foregroundColor(.white.opacity(0.9))
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 53)
                     .padding(.top, -10)
+                    .fixedSize(horizontal: false, vertical: true)
                 
                 if viewModel.suggestions.isEmpty {
                      NoSuggestionsView()
@@ -105,6 +106,7 @@ struct ExploreCityView: View {
             }
         }
         .frame(height: 600) // Give the ZStack a consistent height
+        .padding(.top, 30)
     }
     
     private func getScale(for index: Int) -> CGFloat {

@@ -70,7 +70,7 @@ struct SuggestionCard: View {
                 .padding(20)
                 .frame(maxHeight: .infinity, alignment: .bottom)
             }
-            .frame(height: 380)
+            .frame(height: 365)
             
             HStack(spacing: 10) {
                 Button(action: {

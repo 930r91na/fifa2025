@@ -11,6 +11,7 @@ import CoreLocation
 struct MockData {
     static let locations: [MapLocation] = [
         MapLocation(
+            denueID: "",
             name: "Estadio Azteca",
             type: .stadium,
             coordinate: CLLocationCoordinate2D(latitude: 19.3028, longitude: -99.1504),
@@ -20,6 +21,7 @@ struct MockData {
             
         ),
         MapLocation(
+            denueID: "",
             name: "Tacos Chupacabras",
             type: .food,
             coordinate: CLLocationCoordinate2D(latitude: 19.3305, longitude: -99.1601),
@@ -28,6 +30,7 @@ struct MockData {
             promotesWomenInSports: false
         ),
         MapLocation(
+            denueID: "",
             name: "Mercado de Coyoacán",
             type: .shop,
             coordinate: CLLocationCoordinate2D(latitude: 19.3496, longitude: -99.1618),
@@ -36,6 +39,7 @@ struct MockData {
             promotesWomenInSports: false
         ),
         MapLocation(
+            denueID: "",
             name: "Museo Frida Kahlo",
             type: .cultural,
             coordinate: CLLocationCoordinate2D(latitude: 19.3551, longitude: -99.1623),

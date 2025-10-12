@@ -77,8 +77,7 @@ class MapViewModel: ObservableObject {
     private func loadBusinesses(near coordinate: CLLocationCoordinate2D, radius: Int) async {
         errorMessage = nil
         do {
-            let businesses = try await denueService.fetchBusinesses(near: coordinate, radiusInMeters: radius)
-            // ---- CAPPING LOGIC IS APPLIED HERE ----
+            let businesses = try await denueService.fetchBusinesses(for: LocationType.allCases, near: coordinate, radiusInMeters: radius)
             self.allLocations = capBusinesses(businesses, for: self.mapRegion)
             self.applyFilters()
         } catch {

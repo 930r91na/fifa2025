@@ -9,17 +9,18 @@ import Foundation
 import CoreLocation
 import SwiftUI
 
-// Enum for filtering categories
 enum LocationType: Int, CaseIterable, Identifiable {
     case food = 0
     case shop = 1
     case cultural = 2
     case stadium = 3
-    case others = 4
+    case entertainment = 4
+    case souvenirs = 5
+    case others = 6
     
     var id: Int { rawValue }
     
-    var type: LocalizedStringKey{
+    var type: LocalizedStringKey {
         switch self {
         case .food:
             return "Food"
@@ -29,6 +30,10 @@ enum LocationType: Int, CaseIterable, Identifiable {
             return "Cultural"
         case .stadium:
             return "Stadium"
+        case .entertainment:
+            return "Entertainment"
+        case .souvenirs:
+            return "Souvenirs"
         case .others:
             return "Others"
         }
@@ -44,15 +49,19 @@ enum LocationType: Int, CaseIterable, Identifiable {
             return "building.columns.fill"
         case .stadium:
             return "sportscourt.fill"
+        case .entertainment:
+            return "music.mic"
+        case .souvenirs:
+            return "gift.fill"
         case .others:
-            return "scope"
+            return "ellipsis.circle.fill"
         }
     }
 }
 
-// Model for a single location on the map
-struct MapLocation: Identifiable {
+struct MapLocation: Identifiable, Equatable {
     let id: UUID
+    let denueID: String?
     let name: String
     let type: LocationType
     let coordinate: CLLocationCoordinate2D
@@ -64,8 +73,9 @@ struct MapLocation: Identifiable {
     let phoneNumber: String?
     let website: String?
 
-    init(id: UUID = UUID(), name: String, type: LocationType, coordinate: CLLocationCoordinate2D, description: String, imageName: String, promotesWomenInSports: Bool, address: String? = nil, phoneNumber: String? = nil, website: String? = nil) {
+    init(id: UUID = UUID(), denueID: String, name: String, type: LocationType, coordinate: CLLocationCoordinate2D, description: String, imageName: String, promotesWomenInSports: Bool, address: String? = nil, phoneNumber: String? = nil, website: String? = nil) {
         self.id = id
+        self.denueID = denueID
         self.name = name
         self.type = type
         self.coordinate = coordinate
@@ -75,5 +85,10 @@ struct MapLocation: Identifiable {
         self.address = address
         self.phoneNumber = phoneNumber
         self.website = website
+    }
+    
+    // Conformance to Equatable to allow for easy filtering of duplicates
+    static func == (lhs: MapLocation, rhs: MapLocation) -> Bool {
+        return lhs.denueID == rhs.denueID
     }
 }

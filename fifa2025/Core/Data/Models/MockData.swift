@@ -49,6 +49,24 @@ struct MockData {
         let imageNames = ["estadio_azteca", "tacos_chupacabras", "mercado_coyoacan", "museo_frida"]
         return imageNames.randomElement() ?? "mercado_coyoacan"
     }
+    
+    static let user = User(
+            id: UUID(),
+            name: "Juan",
+            profileImageName: "person.crop.circle",
+            teamPreference: "Mexico",
+            points: 2500,
+            streak: 5,
+            completedChallenges: [
+                Challenge(id: UUID(), title: "Local Taster", description: "Visit a local restaurant", pointsAwarded: 50, completionDate: Date().addingTimeInterval(-86400 * 2)),
+                Challenge(id: UUID(), title: "Cultural Explorer", description: "Visit a museum", pointsAwarded: 100, completionDate: Date().addingTimeInterval(-86400 * 5))
+            ],
+            visits: [
+                Visit(id: UUID(), location: locations[0], date: Date().addingTimeInterval(-86400), rating: 5, comment: "An absolutely iconic and historic venue! The energy is palpable."),
+                Visit(id: UUID(), location: locations[1], date: Date().addingTimeInterval(-86400 * 3), rating: 4, comment: "Delicious tacos, a truly authentic experience."),
+                Visit(id: UUID(), location: locations[2], date: Date().addingTimeInterval(-86400 * 7), rating: 5, comment: "A beautiful and inspiring place. A must-see in Mexico City.")
+            ]
+        )
 }
 
 

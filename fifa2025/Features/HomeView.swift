@@ -18,7 +18,17 @@ struct HomeView: View {
                 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        HeaderGreetingView(name: "Geo")
+                        HStack{
+                            NavigationLink(destination: ProfileView()) {
+                                Image(systemName: "person.crop.circle")
+                                    .font(.largeTitle)
+                                    .foregroundColor(.white)
+                            }
+
+                            Spacer()
+                            HeaderGreetingView(name: "Geo")
+                        }
+                        
                                     
                         ScoreView(points: 1250)
                                     

@@ -27,7 +27,6 @@ struct SuggestionCarouselView: View {
             .blur(radius: 15, opaque: true)
             .opacity(0.6)
             
-            // Overlay to darken the background
             Rectangle()
                 .fill(.black.opacity(0.4))
 

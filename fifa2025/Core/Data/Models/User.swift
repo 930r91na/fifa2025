@@ -10,17 +10,16 @@ struct User: Identifiable {
     let id: UUID
     let name: String
     let profileImageName: String
-    let teamPreference: String
+    var teamPreference: String
+    var opinionOnboardingPlace: Set<LocationType>?
     
     // Gamification Stats
-    let points: Int
-    let streak: Int
-    let completedChallenges: [Challenge]
+    var points: Int
+    var streak: Int
+    var completedChallenges: [Challenge]
     
-    // User Activity
-    let visits: [Visit]
+    var visits: [Visit]
     
-    // Function to get the most recent visits
     func recentVisits(limit: Int) -> [Visit] {
         return Array(visits.sorted(by: { $0.date > $1.date }).prefix(limit))
     }

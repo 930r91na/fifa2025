@@ -11,7 +11,6 @@ internal import EventKit
 struct OnboardingView: View {
     @Binding var hasCompletedOnboarding: Bool
     @State private var selectedTab = 0
-    // We'll store preferences here and save them at the end.
     @State private var selectedTeam: String?
     @State private var selectedInterests = Set<LocationType>()
 
@@ -26,7 +25,11 @@ struct OnboardingView: View {
             InterestSelectionStepView(selectedTab: $selectedTab, selectedInterests: $selectedInterests)
                 .tag(2)
             
-            PermissionsStepView(hasCompletedOnboarding: $hasCompletedOnboarding)
+            PermissionsStepView(
+                hasCompletedOnboarding: $hasCompletedOnboarding,
+                selectedTeam: selectedTeam,
+                selectedInterests: selectedInterests
+            )
                 .tag(3)
         }
         .tabViewStyle(.page(indexDisplayMode: .automatic))
@@ -93,7 +96,7 @@ struct InterestSelectionStepView: View {
     @Binding var selectedTab: Int
     @Binding var selectedInterests: Set<LocationType>
     
-    let interests: [LocationType] = [.food, .shop, .cultural, .stadium]
+    let interests: [LocationType] = LocationType.allCases
 
     var body: some View {
         VStack(spacing: 20) {
@@ -173,11 +176,15 @@ struct InterestButton: View {
 
 
 struct PermissionsStepView: View {
+    @EnvironmentObject var userDataManager: UserDataManager
     @Binding var hasCompletedOnboarding: Bool
     
     // We'll use the existing managers
     @StateObject private var calendarManager = CalendarManager()
     @StateObject private var locationManager = LocationManager()
+    
+    let selectedTeam: String?
+    let selectedInterests: Set<LocationType>
 
     var body: some View {
         VStack(spacing: 30) {
@@ -208,7 +215,10 @@ struct PermissionsStepView: View {
             Spacer()
             
             Button(action: {
-                // Here you would save the preferences (team, interests) to your User model or user defaults.
+                userDataManager.completeOnboarding(
+                    team: selectedTeam,
+                    interests: selectedInterests
+                )
                 hasCompletedOnboarding = true
             }) {
                 Text("Finish Setup")

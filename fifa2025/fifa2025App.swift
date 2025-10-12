@@ -10,6 +10,7 @@ import SwiftUI
 @main
 struct fifa2025App: App {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
+    @StateObject private var userDataManager = UserDataManager()
 
     var body: some Scene {
         WindowGroup {
@@ -18,6 +19,7 @@ struct fifa2025App: App {
                     .foregroundColor(Color("BackgroudColor"))
             } else {
                 OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
+                    .environmentObject(userDataManager)
             }
         }
     }

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SuggestionCarouselView: View {
     let suggestions: [ItinerarySuggestion]
+    @ObservedObject var viewModel: HomeViewModel
     @State private var currentIndex: Int = 0
 
     var body: some View {
@@ -33,7 +34,7 @@ struct SuggestionCarouselView: View {
             // MARK: - Foreground Card Carousel
             TabView(selection: $currentIndex) {
                 ForEach(suggestions.indices, id: \.self) { index in
-                    SuggestionCardView(suggestion: suggestions[index])
+                    SuggestionCardView(suggestion: suggestions[index], viewModel: viewModel)
                         .tag(index)
                         .padding(.horizontal, 40) // Creates space for background to peek through
                 }

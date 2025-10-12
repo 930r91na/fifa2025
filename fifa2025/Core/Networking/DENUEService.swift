@@ -93,7 +93,7 @@ class DENUEService {
         } else if lowercasedCategory.contains("museo") || lowercasedCategory.contains("cultural") {
             return .cultural
         } else {
-            return .cultural // Default for others
+            return .others 
         }
     }
 }

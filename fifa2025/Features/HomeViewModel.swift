@@ -14,6 +14,8 @@ internal import EventKit
 class HomeViewModel: ObservableObject {
     @Published var suggestions: [ItinerarySuggestion] = []
     @Published var calendarAuthorizationStatus: EKAuthorizationStatus
+    @Published var showScheduleAlert = false
+    @Published var scheduleAlertMessage = ""
     
     private let calendarManager = CalendarManager()
     private let locationManager = LocationManager()
@@ -37,16 +39,39 @@ class HomeViewModel: ObservableObject {
         calendarManager.$authorizationStatus
             .receive(on: DispatchQueue.main)
             .assign(to: &$calendarAuthorizationStatus)
+
+        if useMockLocation {
+            locationManager.startUpdatingLocationWithMock()
+        } else {
+            locationManager.startUpdatesIfNeeded()
+        }
     }
     
     func checkAndRequestPermissionsIfNeeded() {
+        // --- FIX 2: FETCH CALENDAR EVENTS IF ALREADY AUTHORIZED ---
+        // This ensures events are fetched on every app launch, not just the first time.
         if calendarAuthorizationStatus == .notDetermined {
             calendarManager.requestAccess()
+        } else if calendarAuthorizationStatus == .fullAccess {
+            calendarManager.fetchEvents()
         }
     }
     
     func requestCalendarAccess() {
         calendarManager.requestAccess()
+    }
+    
+    func scheduleSuggestion(_ suggestion: ItinerarySuggestion) {
+        calendarManager.addEvent(suggestion: suggestion) { [weak self] success in
+            DispatchQueue.main.async {
+                if success {
+                    self?.scheduleAlertMessage = "\(suggestion.location.name) has been added to your calendar!"
+                } else {
+                    self?.scheduleAlertMessage = "Failed to add event. Please check your calendar permissions in Settings."
+                }
+                self?.showScheduleAlert = true
+            }
+        }
     }
     
     private func regenerateSuggestions(events: [Event], userLocation: CLLocation) {

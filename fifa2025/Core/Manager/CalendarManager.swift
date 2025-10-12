@@ -48,4 +48,28 @@ class CalendarManager: ObservableObject {
             }
         }
     }
+    
+    func addEvent(suggestion: ItinerarySuggestion, completion: @escaping (Bool) -> Void) {
+        guard EKEventStore.authorizationStatus(for: .event) == .fullAccess else {
+            print("Cannot add event, calendar access not granted.")
+            completion(false)
+            return
+        }
+
+        let event = EKEvent(eventStore: eventStore)
+        event.title = "Visit \(suggestion.location.name)"
+        event.startDate = suggestion.freeTimeSlot.start
+        // Let's schedule it for an hour by default
+        event.endDate = suggestion.freeTimeSlot.start.addingTimeInterval(3600)
+        event.calendar = eventStore.defaultCalendarForNewEvents
+
+        do {
+            try eventStore.save(event, span: .thisEvent)
+            print("Event saved to calendar.")
+            completion(true)
+        } catch {
+            print("Failed to save event with error: \(error)")
+            completion(false)
+        }
+    }
 }

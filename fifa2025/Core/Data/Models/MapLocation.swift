@@ -15,6 +15,7 @@ enum LocationType: Int, CaseIterable, Identifiable {
     case shop = 1
     case cultural = 2
     case stadium = 3
+    case others = 4
     
     var id: Int { rawValue }
     
@@ -28,6 +29,8 @@ enum LocationType: Int, CaseIterable, Identifiable {
             return "Cultural"
         case .stadium:
             return "Stadium"
+        case .others:
+            return "Others"
         }
     }
     
@@ -41,6 +44,8 @@ enum LocationType: Int, CaseIterable, Identifiable {
             return "building.columns.fill"
         case .stadium:
             return "sportscourt.fill"
+        case .others:
+            return "scope"
         }
     }
 }

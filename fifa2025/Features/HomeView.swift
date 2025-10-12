@@ -32,13 +32,16 @@ struct HomeView: View {
             .onAppear {
                 viewModel.checkAndRequestPermissionsIfNeeded()
             }
+            .alert("Calendar Update", isPresented: $viewModel.showScheduleAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(viewModel.scheduleAlertMessage)
+            }
         }
     }
 }
 
 // MARK: - Subviews for HomeView
-
-
 struct HeaderGreetingView: View {
     var name: String
     
@@ -161,7 +164,7 @@ struct ExploreCityView: View {
                         NoSuggestionsView()
                             .frame(height: 300) // Give a consistent height
                     } else {
-                        SuggestionCarouselView(suggestions: viewModel.suggestions)
+                        SuggestionCarouselView(suggestions: viewModel.suggestions, viewModel: viewModel)
                     }
                 } else {
                     CalendarAccessPromptView()

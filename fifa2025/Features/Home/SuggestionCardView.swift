@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SuggestionCardView: View {
     let suggestion: ItinerarySuggestion
+    @ObservedObject var viewModel: HomeViewModel
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -54,13 +55,16 @@ struct SuggestionCardView: View {
                 
                 HStack(spacing: 12) {
                     ActionButton(title: "Ver en mapa", icon: "mappin.and.ellipse")
-                    ActionButton(title: "Agendar", icon: "calendar.badge.plus", isPrimary: true)
+                    // Pass the action to the primary button
+                    ActionButton(title: "Agendar", icon: "calendar.badge.plus", isPrimary: true) {
+                        viewModel.scheduleSuggestion(suggestion)
+                    }
                 }
             }
             .padding(24)
             .foregroundColor(.white)
         }
-        .frame(height: 500) // Match the image frame height
+        .aspectRatio(3/4, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .shadow(color: .black.opacity(0.3), radius: 10, y: 5)
     }
@@ -86,9 +90,12 @@ struct ActionButton: View {
     let title: LocalizedStringKey
     let icon: String
     var isPrimary: Bool = false
+    // Add an optional action closure
+    var action: (() -> Void)? = nil
     
     var body: some View {
-        Button(action: {}) {
+        // Use the provided action
+        Button(action: { action?() }) {
             HStack {
                 Image(systemName: icon)
                 Text(title)

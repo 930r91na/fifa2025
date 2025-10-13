@@ -84,7 +84,7 @@ struct LeaderboardEntry: Identifiable, Hashable {
     let id = UUID()
     let country: String
     let points: Int
-    let flagName: String?
+    let flagEmoji: String
 }
 
 
@@ -108,12 +108,12 @@ final class CommunityViewModel: ObservableObject {
     // MARK: - Load simulated leaderboard
     private func loadSampleLeaderboard() {
         leaderboard = [
-            LeaderboardEntry(country: "Mexico", points: 70, flagName: "flag_mexico"),
-            LeaderboardEntry(country: "Argentina", points: 10, flagName: "flag_argentina"),
-            LeaderboardEntry(country: "Colombia", points: 45, flagName: "flag_colombia"),
-            LeaderboardEntry(country: "Chile", points: 30, flagName: "flag_chile"),
-            LeaderboardEntry(country: "Peru", points: 25, flagName: "flag_peru"),
-            LeaderboardEntry(country: "Spain", points: 60, flagName: "flag_spain"),
+            LeaderboardEntry(country: "Mexico", points: 90, flagEmoji: "🇲🇽"),
+            LeaderboardEntry(country: "Argentina", points: 10, flagEmoji: "🇦🇷"),
+            LeaderboardEntry(country: "Colombia", points: 45, flagEmoji: "🇨🇴"),
+            LeaderboardEntry(country: "Chile", points: 30, flagEmoji: "🇨🇱"),
+            LeaderboardEntry(country: "Peru", points: 25, flagEmoji: "🇵🇪"),
+            LeaderboardEntry(country: "Spain", points: 60, flagEmoji: "🇪🇸")
         ].sorted { $0.points > $1.points }
     }
     

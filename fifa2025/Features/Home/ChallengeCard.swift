@@ -249,7 +249,7 @@ struct ChallengePopupView: View {
                             .padding(12)
                             .background(Color.white.opacity(0.15))
                             .cornerRadius(12)
-                            .foregroundColor(.white)
+                            .foregroundColor(.black)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
                                     .stroke(Color(hex: "#B1E902").opacity(0.3), lineWidth: 1)

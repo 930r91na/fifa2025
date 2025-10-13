@@ -8,14 +8,17 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var communityVM = CommunityViewModel() 
+    
+    
     var body: some View {
         TabView {
-            HomeView()
+            HomeView(communityVM: communityVM)
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
                 }
             
-            CommunityView()
+            CommunityView(vm: communityVM)
                 .tabItem {
                     Label("Community", systemImage: "person.3.fill")
                 }

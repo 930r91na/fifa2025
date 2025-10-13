@@ -9,7 +9,7 @@ import SwiftUI
 import Combine
 
 struct CommunityView: View {
-    @StateObject private var vm = CommunityViewModel()
+    @ObservedObject var vm: CommunityViewModel
     private let localUser = UserModel(id: UUID(), username: "me_local", displayName: "You", avatarName: "user_local", country: "Mexico")
     
     var body: some View {
@@ -143,12 +143,25 @@ struct PostCardView: View {
                     .foregroundColor(.secondary)
             }
             
-            Image(post.businessImageName)
-                .resizable()
-                .scaledToFill()
-                .frame(maxHeight: 240)
-                .clipped()
-                .cornerRadius(8)
+            // ⬇️⬇️⬇️ CAMBIA ESTA PARTE ⬇️⬇️⬇️
+            if let challengePhoto = post.challengePhoto {
+                // Muestra la foto que tomó el usuario
+                Image(uiImage: challengePhoto)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxHeight: 240)
+                    .clipped()
+                    .cornerRadius(8)
+            } else {
+                // Muestra imagen por defecto si no hay foto del desafío
+                Image(post.businessImageName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxHeight: 240)
+                    .clipped()
+                    .cornerRadius(8)
+            }
+            // ⬆️⬆️⬆️ HASTA AQUÍ ⬆️⬆️⬆️
             
             Text(post.businessName)
                 .font(.subheadline)
@@ -182,9 +195,7 @@ struct PostCardView: View {
             CommentsSheet(post: post, onAdd: { text in onAddComment(text) })
         }
     }
-}
-
-// MARK: - Comments sheet
+}// MARK: - Comments sheet
 struct CommentsSheet: View {
     @Environment(\.dismiss) var dismiss
     let post: PostModel
@@ -235,6 +246,3 @@ struct CommentsSheet: View {
     }
 }
 
-#Preview {
-    CommunityView()
-}

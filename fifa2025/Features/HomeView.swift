@@ -9,7 +9,8 @@ internal import EventKit
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
-    @StateObject private var communityVM = CommunityViewModel()
+
+    @ObservedObject var communityVM: CommunityViewModel
     
     var body: some View {
         NavigationView {
@@ -19,7 +20,7 @@ struct HomeView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
                            
-                        HeaderGreetingView(name: "Juan")
+                        HeaderGreetingView(name: "Oscar")
                         
                         ScoreView(points: 1250)
                         
@@ -339,5 +340,5 @@ struct DailyChallengeView: View {
 }
 
 #Preview {
-    HomeView()
+    HomeView(communityVM: CommunityViewModel())
 }

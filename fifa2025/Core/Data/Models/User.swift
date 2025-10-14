@@ -46,6 +46,8 @@ struct Challenge: Identifiable {
     var completionDate: Date?
     var photoEvidence: UIImage?
     var review: String?
+    var rating: Int?
+    var recommended: Bool?
 }
 
 
@@ -63,6 +65,8 @@ struct PostModel: Identifiable {
     var comments: [CommentModel]
     let date: Date
     var challengePhoto: UIImage?
+    var rating: Int?           
+    var recommended: Bool?
 }
 
 struct UserModel: Identifiable {
@@ -119,9 +123,9 @@ final class CommunityViewModel: ObservableObject {
     
     // MARK: - Load simulated posts
     private func loadSampleUsersAndPosts() {
-        let u1 = UserModel(id: UUID(), username: "maria89", displayName: "María H.", avatarName: "user1", country: "Mexico")
+        let u1 = UserModel(id: UUID(), username: "maria89", displayName: "María H.", avatarName: "user1", country: "México")
         let u2 = UserModel(id: UUID(), username: "carlos_rs", displayName: "Carlos R.", avatarName: "user2", country: "Argentina")
-        let u3 = UserModel(id: UUID(), username: "ana_code", displayName: "Ana C.", avatarName: "user3", country: "Mexico")
+        let u3 = UserModel(id: UUID(), username: "ana_code", displayName: "Ana C.", avatarName: "user3", country: "México")
         
         posts = [
             PostModel(
@@ -140,17 +144,20 @@ final class CommunityViewModel: ObservableObject {
     }
     
     // MARK: - Add Challenge Post
-    func addChallengePost(challengeTitle: String, photo: UIImage, review: String) {
+
+    func addChallengePost(challengeTitle: String, photo: UIImage, review: String, rating: Int, recommended: Bool) {
         let newPost = PostModel(
             id: UUID(),
             user: currentUser,
             businessName: challengeTitle,
-            businessImageName: "challenge_photo", // Aquí usarías la foto real
+            businessImageName: "challenge_photo",
             text: review,
             likes: 0,
             comments: [],
             date: Date(),
-            challengePhoto: photo
+            challengePhoto: photo,
+            rating: rating,
+            recommended: recommended
         )
         
         posts.insert(newPost, at: 0)

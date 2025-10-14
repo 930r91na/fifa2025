@@ -291,8 +291,8 @@ struct DailyChallengeView: View {
                         showChallengePopup = false
                         selectedChallengeIndex = nil
                     },
-                    onComplete: { photo, review in
-                        completeChallenge(at: index, photo: photo, review: review)
+                    onComplete: { photo, review, rating, recommended in  // ⬅️ ACTUALIZADO: 4 parámetros
+                        completeChallenge(at: index, photo: photo, review: review, rating: rating, recommended: recommended)
                         showChallengePopup = false
                         selectedChallengeIndex = nil
                     }
@@ -309,19 +309,24 @@ struct DailyChallengeView: View {
         }
     }
     
-    private func completeChallenge(at index: Int, photo: UIImage, review: String) {
+    // ⬅️ ACTUALIZADO: Función completeChallenge con los nuevos parámetros
+    private func completeChallenge(at index: Int, photo: UIImage, review: String, rating: Int, recommended: Bool) {
         guard !challenges[index].isCompleted else { return }
         
         challenges[index].isCompleted = true
         challenges[index].completionDate = Date()
         challenges[index].photoEvidence = photo
         challenges[index].review = review
+        challenges[index].rating = rating
+        challenges[index].recommended = recommended
         
-        // Crear post automáticamente
+        // Crear post automáticamente con todos los datos
         communityVM.addChallengePost(
             challengeTitle: challenges[index].title,
             photo: photo,
-            review: review
+            review: review,
+            rating: rating,
+            recommended: recommended
         )
         
         earnedPoints = challenges[index].pointsAwarded
@@ -338,7 +343,6 @@ struct DailyChallengeView: View {
         }
     }
 }
-
 #Preview {
     HomeView(communityVM: CommunityViewModel())
 }

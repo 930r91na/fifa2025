@@ -109,12 +109,14 @@ struct PointsAnimationView: View {
 struct ChallengePopupView: View {
     let challenge: Challenge
     let onDismiss: () -> Void
-    let onComplete: (UIImage, String) -> Void
+    let onComplete: (UIImage, String, Int, Bool) -> Void // ⬅️ Ahora incluye rating y recommended
     
     @State private var showImagePicker = false
     @State private var selectedImage: UIImage?
     @State private var reviewText = ""
     @State private var showReviewStep = false
+    @State private var rating: Int = 0
+    @State private var recommended: Bool = true
     
     var body: some View {
         ZStack {
@@ -211,70 +213,197 @@ struct ChallengePopupView: View {
                     .cornerRadius(24)
                     .shadow(color: Color(hex: "#1738EA").opacity(0.3), radius: 20)
                 } else {
-                    // Paso 2: Agregar reseña
-                    VStack(spacing: 20) {
-                        HStack {
+                    // Paso 2: Agregar reseña MEJORADO
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            HStack {
+                                Button(action: {
+                                    showReviewStep = false
+                                    selectedImage = nil
+                                    reviewText = ""
+                                    rating = 0
+                                    recommended = true
+                                }) {
+                                    Image(systemName: "chevron.left.circle.fill")
+                                        .font(.system(size: 28))
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                                Spacer()
+                                Button(action: onDismiss) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.system(size: 28))
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 20)
+                            
+                            // Foto tomada
+                            if let image = selectedImage {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 300, height: 200)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color(hex: "#B1E902"), lineWidth: 2)
+                                    )
+                                    .shadow(color: Color(hex: "#B1E902").opacity(0.3), radius: 10)
+                            }
+                            
+                            VStack(spacing: 20) {
+                                // Calificación con estrellas
+                                VStack(spacing: 12) {
+                                    Text("¿Cómo calificarías tu experiencia?")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundColor(.white)
+                                    
+                                    HStack(spacing: 12) {
+                                        ForEach(1...5, id: \.self) { star in
+                                            Button(action: {
+                                                withAnimation(.spring(response: 0.3)) {
+                                                    rating = star
+                                                }
+                                            }) {
+                                                Image(systemName: star <= rating ? "star.fill" : "star")
+                                                    .font(.system(size: 32))
+                                                    .foregroundColor(star <= rating ? Color(hex: "#B1E902") : .white.opacity(0.3))
+                                                    .scaleEffect(star == rating ? 1.2 : 1.0)
+                                            }
+                                        }
+                                    }
+                                    .padding(.vertical, 8)
+                                }
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color.white.opacity(0.1))
+                                )
+                                
+                                // Recomendación
+                                VStack(spacing: 12) {
+                                    Text("¿Lo recomendarías?")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundColor(.white)
+                                    
+                                    HStack(spacing: 16) {
+                                        // Sí
+                                        Button(action: {
+                                            withAnimation(.spring(response: 0.3)) {
+                                                recommended = true
+                                            }
+                                        }) {
+                                            HStack(spacing: 8) {
+                                                Image(systemName: "hand.thumbsup.fill")
+                                                    .font(.system(size: 20))
+                                                Text("Sí")
+                                                    .font(.system(size: 16, weight: .semibold))
+                                            }
+                                            .foregroundColor(recommended ? Color(hex: "#18257E") : .white)
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 14)
+                                            .background(recommended ? Color(hex: "#B1E902") : Color.white.opacity(0.2))
+                                            .cornerRadius(12)
+                                        }
+                                        
+                                        // No
+                                        Button(action: {
+                                            withAnimation(.spring(response: 0.3)) {
+                                                recommended = false
+                                            }
+                                        }) {
+                                            HStack(spacing: 8) {
+                                                Image(systemName: "hand.thumbsdown.fill")
+                                                    .font(.system(size: 20))
+                                                Text("No")
+                                                    .font(.system(size: 16, weight: .semibold))
+                                            }
+                                            .foregroundColor(!recommended ? .white : .white.opacity(0.7))
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 14)
+                                            .background(!recommended ? Color.red.opacity(0.7) : Color.white.opacity(0.2))
+                                            .cornerRadius(12)
+                                        }
+                                    }
+                                }
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color.white.opacity(0.1))
+                                )
+                                
+                                // Reseña escrita
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("Cuéntanos tu experiencia")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundColor(.white)
+                                    
+                                    ZStack(alignment: .topLeading) {
+                                        if reviewText.isEmpty {
+                                            Text("Escribe aquí tu reseña detallada...")
+                                                .foregroundColor(.white.opacity(0.4))
+                                                .padding(.top, 8)
+                                                .padding(.leading, 12)
+                                        }
+                                        
+                                        TextEditor(text: $reviewText)
+                                            .frame(height: 120)
+                                            .padding(8)
+                                            .foregroundColor(.white)
+                                            .scrollContentBackground(.hidden)
+                                            .background(Color.clear)
+                                    }
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.white.opacity(0.15))
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color(hex: "#B1E902").opacity(0.3), lineWidth: 1.5)
+                                    )
+                                }
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color.white.opacity(0.1))
+                                )
+                            }
+                            .padding(.horizontal, 20)
+                            
+                            // Botón de completar
                             Button(action: {
-                                showReviewStep = false
-                                selectedImage = nil
+                                guard let image = selectedImage,
+                                      !reviewText.isEmpty,
+                                      rating > 0 else { return }
+                                onComplete(image, reviewText, rating, recommended)
                             }) {
-                                Image(systemName: "chevron.left.circle.fill")
-                                    .font(.system(size: 28))
-                                    .foregroundColor(.white.opacity(0.8))
-                            }
-                            Spacer()
-                            Button(action: onDismiss) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 28))
-                                    .foregroundColor(.white.opacity(0.8))
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 20)
-                        
-                        if let image = selectedImage {
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 280, height: 180)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                        
-                        Text("Escribe tu reseña")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.white)
-                        
-                        TextEditor(text: $reviewText)
-                            .frame(height: 120)
-                            .padding(12)
-                            .background(Color.white.opacity(0.15))
-                            .cornerRadius(12)
-                            .foregroundColor(.black)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color(hex: "#B1E902").opacity(0.3), lineWidth: 1)
-                            )
-                            .padding(.horizontal, 30)
-                        
-                        Button(action: {
-                            guard let image = selectedImage, !reviewText.isEmpty else { return }
-                            onComplete(image, reviewText)
-                        }) {
-                            Text("Completar desafío")
-                                .font(.system(size: 18, weight: .semibold))
+                                HStack(spacing: 8) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 20))
+                                    Text("Completar desafío")
+                                        .font(.system(size: 18, weight: .bold))
+                                }
                                 .foregroundColor(Color(hex: "#18257E"))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
                                 .background(
-                                    reviewText.isEmpty ? Color.gray.opacity(0.5) : Color(hex: "#B1E902")
+                                    isFormValid() ?
+                                    Color(hex: "#B1E902") :
+                                    Color.gray.opacity(0.5)
                                 )
                                 .cornerRadius(14)
+                                .shadow(
+                                    color: isFormValid() ? Color(hex: "#B1E902").opacity(0.5) : .clear,
+                                    radius: 10
+                                )
+                            }
+                            .disabled(!isFormValid())
+                            .padding(.horizontal, 30)
+                            .padding(.bottom, 30)
                         }
-                        .disabled(reviewText.isEmpty)
-                        .padding(.horizontal, 30)
-                        .padding(.bottom, 30)
                     }
-                    .frame(width: 340)
+                    .frame(width: 360, height: 650)
                     .background(
                         LinearGradient(
                             colors: [Color(hex: "#1738EA"), Color(hex: "#18257E")],
@@ -293,7 +422,11 @@ struct ChallengePopupView: View {
             })
         }
     }
+    private func isFormValid() -> Bool {
+        return selectedImage != nil && !reviewText.isEmpty && rating > 0
+    }
 }
+
 struct ImagePicker: UIViewControllerRepresentable {
     @Binding var image: UIImage?
     var onImageSelected: () -> Void

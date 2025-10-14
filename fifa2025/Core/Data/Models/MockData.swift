@@ -56,7 +56,7 @@ struct MockData {
     
     static let user = User(
         id: UUID(),
-        name: "Juan",
+        name: "Óscar",
         profileImageName: "person.crop.circle",
         teamPreference: "Mexico",
         points: 2500,

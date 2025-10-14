@@ -42,6 +42,16 @@ struct CommunityView: View {
                             )
                         
                         // Feed
+                        
+                        Text("Jugadas del día")
+                            .fontWeight(.medium)
+                            .font(Font.theme.subheadline)
+                            .foregroundColor(.white)
+                          
+                            .padding(.leading,-183)
+                            .padding(.bottom, 8)
+                            
+                        
                         VStack(spacing: 12) {
                             ForEach(vm.posts) { post in
                                 PostCardView(
@@ -64,7 +74,7 @@ struct CommunityView: View {
     }
 }
 #Preview {
-    CommunityView(vm: CommunityViewModel())  // ⬅️ Pasa un VM
+    CommunityView(vm: CommunityViewModel())
 }
 
 
@@ -125,7 +135,7 @@ struct LeaderboardPreviewView: View {
             }
             .frame(height: 220)
             .padding(.horizontal, 8)
-            .padding(.bottom, 8)
+            .padding(.bottom, 14)
             
             // Texto descriptivo
             VStack(spacing: 4) {
@@ -323,36 +333,85 @@ struct PostCardView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+         
             HStack {
                 Image(post.user.avatarName)
                     .resizable()
+                    .scaledToFill()
                     .frame(width: 44, height: 44)
                     .clipShape(Circle())
                     .overlay(Circle().stroke(Color.gray.opacity(0.3)))
                 
                 VStack(alignment: .leading) {
-                    Text(post.user.displayName).bold()
-                    Text("@\(post.user.username) • \(post.user.country)")
+                    Text(post.user.displayName)
+                        .bold()
+                        .foregroundColor(.white)
+                    Text("@\(post.user.username)   Apoya a \(post.user.country)")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.white)
                 }
                 Spacer()
-                Text(post.date, style: .time)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                
+                VStack{
+                    if post.challengePhoto != nil {
+                        HStack(spacing: 2) {
+                           
+                            
+                            Text("¡Completó un desafío!")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.black)
+                            
+                            
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        
+                        .background(Color(hex: "#B1E902"))
+                        .cornerRadius(20)
+                        .padding(.bottom, 4)
+                    }
+
+                   
+                    
+                }
+               
             }
             
-            // ⬇️⬇️⬇️ CAMBIA ESTA PARTE ⬇️⬇️⬇️
+            if post.challengePhoto != nil {
+                HStack(spacing: 8) {
+                    Image(systemName: "star.circle.fill")
+                        .foregroundColor(Color(hex: "#B1E902"))
+                        .font(.system(size: 16))
+                    
+                    Text("Desafío completado: \(post.businessName)")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.black)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                
+                .background(Color(hex: "#4DD0E2"))
+                .cornerRadius(20)
+                
+                .padding(.bottom, 4)
+            }
+
+        
             if let challengePhoto = post.challengePhoto {
-                // Muestra la foto que tomó el usuario
+               
                 Image(uiImage: challengePhoto)
                     .resizable()
                     .scaledToFill()
                     .frame(maxHeight: 240)
                     .clipped()
                     .cornerRadius(8)
+                
+                
+                
             } else {
-                // Muestra imagen por defecto si no hay foto del desafío
+               
                 Image(post.businessImageName)
                     .resizable()
                     .scaledToFill()
@@ -360,27 +419,62 @@ struct PostCardView: View {
                     .clipped()
                     .cornerRadius(8)
             }
-            // ⬆️⬆️⬆️ HASTA AQUÍ ⬆️⬆️⬆️
+       
+                        if let rating = post.rating, let recommended = post.recommended {
+                            HStack(spacing: 16) {
+                              
+                                HStack(spacing: 4) {
+                                    ForEach(1...5, id: \.self) { star in
+                                        Image(systemName: star <= rating ? "star.fill" : "star")
+                                            .foregroundColor(star <= rating ? Color(hex: "#B1E902") : .gray.opacity(0.4))
+                                            .font(.system(size: 16))
+                                    }
+                                }
+                                
+                                Spacer()
+                                
+                                
+                                VStack(spacing: 6) {
+                                    Image(systemName: recommended ? "hand.thumbsup.fill" : "hand.thumbsdown.fill")
+                                        .foregroundColor(recommended ? Color(hex: "#B1E902") : .red.opacity(0.8))
+                                        .font(.system(size: 18))
+                                    
+                                    Text(recommended ? "Recomendado" : "No recomendado")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundColor(recommended ? Color(hex: "#B1E902") : .red.opacity(0.8))
+                                }
+                            }
+                           
+                           
+                            
+                        }
+                        
             
             Text(post.businessName)
                 .font(.subheadline)
                 .bold()
+                .foregroundColor(.white)
             
             Text(post.text)
                 .font(.body)
+                .foregroundColor(.white)
             
             HStack {
                 Button(action: onLike) {
                     HStack(spacing: 6) {
                         Image(systemName: post.isLiked ? "heart.fill" : "heart")
+                            .foregroundColor(.white)
                         Text("\(post.likes)")
+                            .foregroundColor(.white)
                     }
                 }
                 
                 Button(action: { showCommentsSheet = true }) {
                     HStack(spacing: 6) {
                         Image(systemName: "bubble.right")
+                            .foregroundColor(.white)
                         Text("\(post.comments.count)")
+                            .foregroundColor(.white)
                     }
                 }
                 Spacer()
@@ -389,12 +483,14 @@ struct PostCardView: View {
             .font(.subheadline)
         }
         .padding()
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color(.systemBackground)).shadow(radius: 1))
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.secondaryBackground.opacity(0.5)).shadow(radius: 1))
         .sheet(isPresented: $showCommentsSheet) {
             CommentsSheet(post: post, onAdd: { text in onAddComment(text) })
         }
     }
-}// MARK: - Comments sheet
+}
+
+// MARK: - Comments sheet
 struct CommentsSheet: View {
     @Environment(\.dismiss) var dismiss
     let post: PostModel
@@ -403,45 +499,90 @@ struct CommentsSheet: View {
     
     var body: some View {
         NavigationStack {
-            VStack {
-                List {
-                    ForEach(post.comments) { c in
-                        VStack(alignment: .leading) {
-                            HStack {
-                                Image(c.user.avatarName)
-                                    .resizable()
-                                    .frame(width: 32, height: 32)
-                                    .clipShape(Circle())
-                                Text(c.user.displayName).bold()
-                                Spacer()
-                                Text(c.date, style: .time)
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
-                            Text(c.text)
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
+            ZStack {
+                // Fondo azul para toda la vista
+                Color("BackgroudColor")
+                    .ignoresSafeArea()
                 
-                HStack {
-                    TextField("Add a comment...", text: $newComment)
-                        .textFieldStyle(.roundedBorder)
-                    Button("Add") {
-                        guard !newComment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-                        onAdd(newComment)
-                        newComment = ""
+                VStack(spacing: 0) {
+                    // Lista de comentarios
+                    List {
+                        ForEach(post.comments) { c in
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Image(c.user.avatarName)
+                                        .resizable()
+                                        .frame(width: 32, height: 32)
+                                        .clipShape(Circle())
+                                    Text(c.user.displayName)
+                                        .bold()
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                    Text(c.date, style: .time)
+                                        .font(.caption2)
+                                        .foregroundColor(.white.opacity(0.7))
+                                }
+                                Text(c.text)
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.vertical, 4)
+                            .listRowBackground(Color.secondaryBackground.opacity(0.3))
+                            .listRowSeparator(.hidden)
+                        }
                     }
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
+                    
+                    // Barra de entrada de comentario
+                    HStack(spacing: 12) {
+                        ZStack(alignment: .leading) {
+                            // Placeholder personalizado en blanco
+                            if newComment.isEmpty {
+                                Text("Add a comment...")
+                                    .foregroundColor(.white.opacity(0.5))
+                                    .padding(.leading, 12)
+                            }
+                            
+                            TextField("", text: $newComment)
+                                .padding(12)
+                                .foregroundColor(.white)
+                        }
+                        .background(Color.white.opacity(0.15))
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        )
+                        
+                        Button(action: {
+                            guard !newComment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+                            onAdd(newComment)
+                            newComment = ""
+                        }) {
+                            Image(systemName: "paperplane.fill")
+                                .font(.system(size: 18))
+                                .foregroundColor(.white)
+                                .frame(width: 44, height: 44)
+                                .background(Color(hex: "#1738EA"))
+                                .clipShape(Circle())
+                        }
+                    }
+                    .padding()
+                    .background(Color.secondaryBackground.opacity(0.5))
                 }
-                .padding()
             }
             .navigationTitle("Comments")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
+                    Button("Close") {
+                        dismiss()
+                    }
+                    .foregroundColor(.white)
                 }
             }
+            .toolbarBackground(Color.secondaryBackground.opacity(0.8), for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
         }
     }
 }
-

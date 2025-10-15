@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var communityVM = CommunityViewModel() 
-    
+    @Binding var receivedCard: WorldCupCard?
     
     var body: some View {
         TabView {
@@ -23,7 +23,7 @@ struct ContentView: View {
                     Label("Community", systemImage: "person.3.fill")
                 }
             
-            AlbumView()
+            AlbumView(receivedCard: $receivedCard)
                 .tabItem {
                     Label("Album", systemImage: "photo.stack.fill")
                 }
@@ -34,8 +34,4 @@ struct ContentView: View {
                 }
         }
     }
-}
-
-#Preview {
-    ContentView()
 }

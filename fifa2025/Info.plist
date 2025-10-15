@@ -6,7 +6,7 @@
 	<array>
 		<dict>
 			<key>CFBundleTypeName</key>
-			<string>World Cup Card</string>
+			<string>World Cup Trading Card</string>
 			<key>LSHandlerRank</key>
 			<string>Owner</string>
 			<key>LSItemContentTypes</key>
@@ -14,23 +14,60 @@
 				<string>femcoding.fifa2025.worldcupcard</string>
 			</array>
 		</dict>
+	</array>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
 		<dict>
-			<key>CFBundleTypeName</key>
-			<string>Trading card</string>
-			<key>LSHandlerRank</key>
-			<string>Default</string>
-			<key>LSItemContentTypes</key>
+			<key>UISceneSessionRoleImmersiveSpaceApplication</key>
 			<array>
-				<string>com.fifa.tradingcard</string>
+				<dict>
+					<key>UISceneClassName</key>
+					<string></string>
+					<key>UISceneConfigurationName</key>
+					<string></string>
+					<key>UISceneDelegateClassName</key>
+					<string></string>
+					<key>UISceneStoryboardFile</key>
+					<string></string>
+				</dict>
+				<dict>
+					<key>UISceneClassName</key>
+					<string></string>
+					<key>UISceneConfigurationName</key>
+					<string></string>
+					<key>UISceneDelegateClassName</key>
+					<string></string>
+					<key>UISceneStoryboardFile</key>
+					<string></string>
+				</dict>
+			</array>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array/>
+			<key>UIWindowSceneSessionRoleExternalDisplayNonInteractive</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string></string>
+					<key>UISceneConfigurationName</key>
+					<string></string>
+					<key>UISceneDelegateClassName</key>
+					<string></string>
+					<key>UISceneStoryboardFile</key>
+					<string></string>
+				</dict>
 			</array>
 		</dict>
-	</array>
+	</dict>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.data</string>
+				<string>public.content</string>
 			</array>
 			<key>UTTypeDescription</key>
 			<string>Trading card</string>
@@ -58,6 +95,22 @@
 			<string>femcoding.fifa2025.worldcupcard</string>
 			<key>UTTypeReferenceURL</key>
 			<string></string>
+		</dict>
+	</array>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>World Cup Trading Card</string>
+			<key>UTTypeIconFiles</key>
+			<array/>
+			<key>UTTypeIdentifier</key>
+			<string>femcoding.fifa2025.worldcupcard</string>
 			<key>UTTypeTagSpecification</key>
 			<dict/>
 		</dict>

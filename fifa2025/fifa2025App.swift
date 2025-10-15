@@ -6,16 +6,19 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 @main
 struct fifa2025App: App {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
     @StateObject private var userDataManager = UserDataManager()
+    
+    @State private var receivedCard: WorldCupCard?
 
     var body: some Scene {
         WindowGroup {
             if hasCompletedOnboarding {
-                ContentView()
+                ContentView(receivedCard: $receivedCard)
                     .foregroundColor(Color("BackgroudColor"))
                     .onOpenURL { url in
                         handleIncomingCard(from: url)
@@ -29,28 +32,43 @@ struct fifa2025App: App {
     
     
     private func handleIncomingCard(from url: URL) {
-        // 1. Check if it's our custom card file
-        guard url.pathExtension == "worldcupcard" else {
-            return
-        }
-    
-        // 2. Read the file's data
-        do {
-            let data = try Data(contentsOf: url)
+            // Start accessing the security-scoped resource
+            guard url.startAccessingSecurityScopedResource() else {
+                print("Failed to access security-scoped resource.")
+                return
+            }
             
-            // 3. Decode the data back into our card object
-            let receivedCard = try JSONDecoder().decode(WorldCupCard.self, from: data)
+            defer {
+                // Stop accessing the resource when we're done
+                url.stopAccessingSecurityScopedResource()
+            }
             
-            print("Successfully received card: \(receivedCard.title)!")
-            
-            // 4. TODO: Add the card to the user's collection
-            // We will handle this in the next step, for now we just print it.
+            do {
+                // Get the content type of the file
+                let resourceValues = try url.resourceValues(forKeys: [.contentTypeKey])
                 
-            // Optional: Clean up the file from the app's inbox
-            try? FileManager.default.removeItem(at: url)
-                
-        } catch {
-            print("Failed to decode incoming card: \(error)")
+                // Check if the content type conforms to your custom UTType
+                if let contentType = resourceValues.contentType, contentType.conforms(to: .worldCupCard) {
+                    
+                    // Read the file's data
+                    let data = try Data(contentsOf: url)
+                    
+                    // Decode the data back into our card object
+                    let card = try JSONDecoder().decode(WorldCupCard.self, from: data)
+                    
+                    print("Successfully received card: \(card.title)!")
+                    
+                    // Set the receivedCard state to trigger the pop-up view
+                    self.receivedCard = card
+                    
+                    // Optional: Clean up the file from the app's inbox
+                    try? FileManager.default.removeItem(at: url)
+                    
+                } else {
+                    print("Received file is not a WorldCupCard.")
+                }
+            } catch {
+                print("Failed to handle incoming card: \(error)")
+            }
         }
-    }
 }

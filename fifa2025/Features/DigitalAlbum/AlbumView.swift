@@ -44,6 +44,8 @@ class AlbumViewModel: ObservableObject {
 struct AlbumView: View {
     @StateObject private var viewModel = AlbumViewModel()
     
+    @Binding var receivedCard: WorldCupCard?
+    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -56,8 +58,6 @@ struct AlbumView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.top, 8)
-                        
-                        
                         
                         // Estadísticas del álbum
                         AlbumStatsView()
@@ -86,6 +86,9 @@ struct AlbumView: View {
                 }
             }
             .background(Color("BackgroudColor").ignoresSafeArea())
+            .sheet(item: $receivedCard) { card in
+                    ReceivedCardView(card: card)
+            }
         }
     }
 }
@@ -114,27 +117,41 @@ struct AlbumCarouselView: View {
                         .opacity(opacity)
                         .offset(x: offset)
                         .zIndex(index == currentIndex ? 10 : Double(5 - abs(index - currentIndex)))
+                        .onTapGesture {
+                            if viewModel.recentCards.firstIndex(where: { $0.id == card.id }) == (viewModel.recentCards.count / 2) {
+                                viewModel.selectedCard = card
+                            }
+                        }
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
             .gesture(
-                DragGesture()
-                    .onChanged { value in
-                        dragOffset = value.translation.width
-                    }
-                    .onEnded { value in
-                        let threshold: CGFloat = 50
-                        
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            if value.translation.width < -threshold && currentIndex < viewModel.recentCards.count - 1 {
-                                currentIndex += 1
-                            } else if value.translation.width > threshold && currentIndex > 0 {
-                                currentIndex -= 1
-                            }
-                            dragOffset = 0
-                        }
-                    }
-            )
+                            DragGesture()
+                                .onChanged { value in
+                                    // Prioritize horizontal movement for the carousel
+                                    if abs(value.translation.width) > abs(value.translation.height) {
+                                        dragOffset = value.translation.width
+                                    }
+                                }
+                                .onEnded { value in
+                                    // Reset offset if it was mainly a vertical scroll
+                                    guard abs(value.translation.width) > abs(value.translation.height) else {
+                                        withAnimation { dragOffset = 0 }
+                                        return
+                                    }
+                                    
+                                    // Handle horizontal swipe to change the card
+                                    let threshold: CGFloat = 50
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                        if value.translation.width < -threshold && currentIndex < viewModel.recentCards.count - 1 {
+                                            currentIndex += 1
+                                        } else if value.translation.width > threshold && currentIndex > 0 {
+                                            currentIndex -= 1
+                                        }
+                                        dragOffset = 0
+                                    }
+                                }
+                        )
         }
         .frame(height: 520)
         .padding(.vertical, 8)
@@ -159,6 +176,42 @@ struct AlbumCarouselView: View {
             return 0.6
         } else {
             return 0.3
+        }
+    }
+}
+
+struct ReceivedCardView: View {
+    let card: WorldCupCard
+    @Environment(\.dismiss) var dismiss
+    
+    var body: some View {
+        ZStack {
+            Color("BackgroudColor").ignoresSafeArea()
+            
+            VStack(spacing: 30) {
+                Text("You Received a Card!")
+                    .font(.largeTitle.weight(.bold))
+                    .foregroundColor(.white)
+                
+                // Reuse your existing WorldCupCardView
+                WorldCupCardView(card: card, viewModel: AlbumViewModel()) // Using a temporary viewModel here
+                    .scaleEffect(0.9)
+
+                Button(action: {
+                    // TODO: Add logic to save the card to the user's collection
+                    print("Adding \(card.title) to collection.")
+                    dismiss()
+                }) {
+                    Text("Add to Album")
+                        .font(.headline.weight(.bold))
+                        .foregroundColor(.black)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color(hex: "#B1E902"))
+                        .cornerRadius(15)
+                }
+                .padding(.horizontal, 40)
+            }
         }
     }
 }
@@ -277,34 +330,39 @@ struct WorldCupCardView: View {
             .cornerRadius(20)
             
             // Botón de intercambio
-            ShareLink(
-                item: card, // The card to share
-                preview: SharePreview(card.title, image: Image(card.imageName))
-            ) {
-                HStack(spacing: 10) {
-                Image(systemName: "arrow.left.arrow.right.circle.fill")
-                    .font(.system(size: 20))
-                Text("Intercambiar ")
-                    .font(.system(size: 17, weight: .bold))
-                }
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
-                    .background(
-                    LinearGradient(
-                        colors: [Color(hex: "#B1E902"), Color(hex: "#90C700")],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .cornerRadius(16)
-                .shadow(color: Color(hex: "#B1E902").opacity(0.4), radius: 10, x: 0, y: 5)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            .padding(.bottom, 16)
-            .background(Color.white.opacity(0.1))
-            .cornerRadius(20)
+            if let fileURL = card.generateFileURL() {
+                       ShareLink(
+                           item: fileURL, // <-- Share the URL, not the card object
+                           preview: SharePreview(
+                               card.title,
+                               image: Image(card.imageName)
+                           )
+                       ) {
+                           HStack(spacing: 10) {
+                               Image(systemName: "arrow.up.forward.app.fill") // A more fitting icon for sharing
+                                   .font(.system(size: 20))
+                               Text("Share Card")
+                                   .font(.system(size: 17, weight: .bold))
+                           }
+                           .foregroundColor(.black)
+                           .frame(maxWidth: .infinity)
+                           .padding(.vertical, 18)
+                           .background(
+                               LinearGradient(
+                                   colors: [Color(hex: "#B1E902"), Color(hex: "#90C700")],
+                                   startPoint: .leading,
+                                   endPoint: .trailing
+                               )
+                           )
+                           .cornerRadius(16)
+                           .shadow(color: Color(hex: "#B1E902").opacity(0.4), radius: 10, x: 0, y: 5)
+                       }
+                       .padding(.horizontal, 16)
+                       .padding(.top, 12)
+                       .padding(.bottom, 16)
+                       .background(Color.white.opacity(0.1))
+                       .cornerRadius(20)
+                   }
         }
         .cornerRadius(20)
         .shadow(color: card.rarity.color.opacity(0.5), radius: 15, x: 0, y: 8)
@@ -428,7 +486,7 @@ struct MiniCardView: View {
 // MARK: - Vista de Imagen Completa (Pop-up)
 struct FullImageView: View {
     let card: WorldCupCard
-    @Binding var isPresented: Bool
+    @Environment(\.dismiss) var dismiss
     @State private var scale: CGFloat = 1.0
     
     var body: some View {
@@ -440,7 +498,7 @@ struct FullImageView: View {
                 HStack {
                     Spacer()
                     Button(action: {
-                        isPresented = false
+                        dismiss()
                     }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 30))
@@ -527,6 +585,3 @@ struct ShareSheet: UIViewControllerRepresentable {
 }
 
 
-#Preview {
-    AlbumView()
-}

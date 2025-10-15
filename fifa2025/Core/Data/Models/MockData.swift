@@ -85,7 +85,7 @@ struct MockData {
                 Visit(id: UUID(), location: locations[0], date: Date().addingTimeInterval(-86400), rating: 5, comment: "An absolutely iconic and historic venue! The energy is palpable."),
                 Visit(id: UUID(), location: locations[1], date: Date().addingTimeInterval(-86400 * 3), rating: 4, comment: "Delicious tacos, a truly authentic experience."),
                 Visit(id: UUID(), location: locations[2], date: Date().addingTimeInterval(-86400 * 7), rating: 5, comment: "A beautiful and inspiring place. A must-see in Mexico City.")
-            ]
+            ], cards: nil
         )
     
     static let challengesAvailable: [Challenge] = [

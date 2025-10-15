@@ -26,6 +26,8 @@ struct User: Identifiable {
     func recentVisits(limit: Int) -> [Visit] {
         return Array(visits.sorted(by: { $0.date > $1.date }).prefix(limit))
     }
+    
+    var cards: [WorldCupCard]?
 }
 
 struct Visit: Identifiable {

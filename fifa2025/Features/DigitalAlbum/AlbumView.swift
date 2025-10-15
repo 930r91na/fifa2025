@@ -7,65 +7,10 @@
 import SwiftUI
 import Combine
 
-// MARK: - Models para el Álbum
-struct WorldCupCard: Identifiable {
-    let id: UUID
-    let title: String // Nombre del estadio o país
-    let subtitle: String // Ciudad o descripción
-    let hostCountry: String // México, USA o Canadá
-    let imageName: String
-    let cardType: CardType
-    let rarity: CardRarity
-    var isOwned: Bool
-    var duplicateCount: Int
-    
-    enum CardType: String {
-        case stadium = "Estadio"
-        case country = "País"
-        
-        var icon: String {
-            switch self {
-            case .stadium: return "building.2.fill"
-            case .country: return "flag.fill"
-            }
-        }
-    }
-    
-    enum CardRarity: String {
-        case common = "Común"
-        case rare = "Raro"
-        case epic = "Épico"
-        case legendary = "Legendario"
-        
-        var color: Color {
-            switch self {
-            case .common: return Color.gray
-            case .rare: return Color.blue
-            case .epic: return Color.purple
-            case .legendary: return Color(hex: "#B1E902")
-            }
-        }
-        
-        var gradient: LinearGradient {
-            switch self {
-            case .common:
-                return LinearGradient(colors: [.gray.opacity(0.8), .gray], startPoint: .topLeading, endPoint: .bottomTrailing)
-            case .rare:
-                return LinearGradient(colors: [.blue.opacity(0.8), .blue], startPoint: .topLeading, endPoint: .bottomTrailing)
-            case .epic:
-                return LinearGradient(colors: [.purple.opacity(0.8), .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
-            case .legendary:
-                return LinearGradient(colors: [Color(hex: "#B1E902").opacity(0.8), Color(hex: "#B1E902")], startPoint: .topLeading, endPoint: .bottomTrailing)
-            }
-        }
-    }
-}
-
 // MARK: - ViewModel del Álbum
 class AlbumViewModel: ObservableObject {
     @Published var recentCards: [WorldCupCard] = []
     @Published var allCards: [WorldCupCard] = []
-    @Published var showTradeSheet = false
     @Published var selectedCard: WorldCupCard?
     
     init() {
@@ -92,11 +37,6 @@ class AlbumViewModel: ObservableObject {
         ]
         
         allCards = recentCards
-    }
-    
-    func openTradeSheet(for card: WorldCupCard) {
-        selectedCard = card
-        showTradeSheet = true
     }
 }
 
@@ -146,11 +86,6 @@ struct AlbumView: View {
                 }
             }
             .background(Color("BackgroudColor").ignoresSafeArea())
-            .sheet(isPresented: $viewModel.showTradeSheet) {
-                if let card = viewModel.selectedCard {
-                    TradeSheetView(card: card, viewModel: viewModel)
-                }
-            }
         }
     }
 }
@@ -342,20 +277,28 @@ struct WorldCupCardView: View {
             .cornerRadius(20)
             
             // Botón de intercambio
-            Button(action: {
-                viewModel.openTradeSheet(for: card)
-            }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "arrow.left.arrow.right")
-                        .font(.system(size: 16, weight: .semibold))
-                    Text("Intercambiar")
-                        .font(.system(size: 16, weight: .semibold))
+            ShareLink(
+                item: card, // The card to share
+                preview: SharePreview(card.title, image: Image(card.imageName))
+            ) {
+                HStack(spacing: 10) {
+                Image(systemName: "arrow.left.arrow.right.circle.fill")
+                    .font(.system(size: 20))
+                Text("Intercambiar ")
+                    .font(.system(size: 17, weight: .bold))
                 }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color(hex: "#2F4FFC"))
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 18)
+                    .background(
+                    LinearGradient(
+                        colors: [Color(hex: "#B1E902"), Color(hex: "#90C700")],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
                 .cornerRadius(16)
+                .shadow(color: Color(hex: "#B1E902").opacity(0.4), radius: 10, x: 0, y: 5)
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
@@ -427,17 +370,13 @@ struct AlbumCollectionGridView: View {
             }
             .font(Font.theme.subheadline)
             .foregroundColor(Color.primaryText)
-            
-           
+
             ProgressView(value: 0.35)
                 .tint(.white)
             
                         
         }
-        
-       
         .padding()
-        
         .background(Color.secondaryBackground.opacity(0.5))
         .cornerRadius(26)
     }
@@ -485,154 +424,6 @@ struct MiniCardView: View {
         }
     }
 }
-
-// MARK: - Sheet de Intercambio con Vista Ampliada y Compartir
-
-struct TradeSheetView: View {
-    let card: WorldCupCard
-    @ObservedObject var viewModel: AlbumViewModel
-    @Environment(\.dismiss) var dismiss
-    @State private var showFullImage = false
-    @State private var showShareSheet = false
-    @State private var showSuccessAnimation = false
-    
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                Color("BackgroudColor").ignoresSafeArea()
-                
-                ScrollView {
-                    VStack(spacing: 24) {
-
-                        WorldCupCardView(card: card, viewModel: viewModel)
-                            .frame(width: 280)
-                            .padding(.top, 20)
-                            .onTapGesture {
-                                showFullImage = true
-                            }
-                        
-              
-                        Text("👆 Toca la carta para ver en grande")
-                            .font(.system(size: 13))
-                            .foregroundColor(.white.opacity(0.6))
-                            .padding(.top, -16)
-                        
-                        VStack(spacing: 16) {
-                            Text("Intercambiar carta")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.white)
-                            
-                            Text("Comparte esta carta con otro jugador.\nAl recibirla, se agregará automáticamente a su álbum.")
-                                .font(.system(size: 14))
-                                .foregroundColor(.white.opacity(0.7))
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 8)
-                            
-                           
-                            Button(action: {
-                                showShareSheet = true
-                            }) {
-                                HStack(spacing: 10) {
-                                    Image(systemName: "arrow.left.arrow.right.circle.fill")
-                                        .font(.system(size: 20))
-                                    Text("Intercambiar carta")
-                                        .font(.system(size: 17, weight: .bold))
-                                }
-                                .foregroundColor(.black)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 18)
-                                .background(
-                                    LinearGradient(
-                                        colors: [Color(hex: "#B1E902"), Color(hex: "#90C700")],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .cornerRadius(16)
-                                .shadow(color: Color(hex: "#B1E902").opacity(0.4), radius: 10, x: 0, y: 5)
-                            }
-                            
-                            // Explicación de cómo funciona
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack(spacing: 10) {
-                                    Image(systemName: "1.circle.fill")
-                                        .foregroundColor(Color(hex: "#B1E902"))
-                                    Text("Selecciona cómo compartir (AirDrop, WhatsApp, etc.)")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.white.opacity(0.8))
-                                }
-                                
-                                HStack(spacing: 10) {
-                                    Image(systemName: "2.circle.fill")
-                                        .foregroundColor(Color(hex: "#B1E902"))
-                                    Text("El otro jugador recibe un link especial")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.white.opacity(0.8))
-                                }
-                                
-                                HStack(spacing: 10) {
-                                    Image(systemName: "3.circle.fill")
-                                        .foregroundColor(Color(hex: "#B1E902"))
-                                    Text("La carta se agrega automáticamente a su álbum")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.white.opacity(0.8))
-                                }
-                            }
-                            .padding(16)
-                            .background(Color.white.opacity(0.05))
-                            .cornerRadius(12)
-                            
-                            Button("Cancelar") {
-                                dismiss()
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(Color.white.opacity(0.15))
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                        }
-                        .padding(.horizontal, 24)
-                        
-                        Spacer()
-                    }
-                }
-                
-                // Animación de éxito
-                if showSuccessAnimation {
-                    ZStack {
-                        Color.black.opacity(0.7)
-                            .ignoresSafeArea()
-                        
-                        VStack(spacing: 20) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 80))
-                                .foregroundColor(Color(hex: "#B1E902"))
-                            
-                            Text("¡Carta compartida!")
-                                .font(.system(size: 24, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                    }
-                    .transition(.opacity)
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .fullScreenCover(isPresented: $showFullImage) {
-                FullImageView(card: card, isPresented: $showFullImage)
-            }
-            .sheet(isPresented: $showShareSheet, onDismiss: {
-                showSuccessAnimation = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                    showSuccessAnimation = false
-                    dismiss()
-                }
-            }) {
-                ShareSheet(card: card)
-            }
-        }
-    }
-}
-
 
 // MARK: - Vista de Imagen Completa (Pop-up)
 struct FullImageView: View {

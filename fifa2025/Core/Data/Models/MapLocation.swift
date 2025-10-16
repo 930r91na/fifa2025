@@ -8,6 +8,7 @@
 import Foundation
 import CoreLocation
 import SwiftUI
+import MapKit
 
 enum LocationType: Int, CaseIterable, Identifiable {
     case food = 0
@@ -90,5 +91,17 @@ struct MapLocation: Identifiable, Equatable {
     // Conformance to Equatable to allow for easy filtering of duplicates
     static func == (lhs: MapLocation, rhs: MapLocation) -> Bool {
         return lhs.denueID == rhs.denueID
+    }
+}
+
+final class MapAnnotation: NSObject, MKAnnotation {
+    let title: String?
+    let coordinate: CLLocationCoordinate2D
+    let locationType: LocationType
+
+    init(location: MapLocation) {
+        self.title = location.name
+        self.coordinate = location.coordinate
+        self.locationType = location.type
     }
 }

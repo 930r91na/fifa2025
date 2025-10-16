@@ -2,25 +2,14 @@ import SwiftUI
 import MapKit
 
 struct MapView: View {
-
     @StateObject private var viewModel = MapViewModel()
-    @State private var selectedLocation: MapLocation?
 
     var body: some View {
         ZStack {
-            Map(coordinateRegion: $viewModel.mapRegion,
-                annotationItems: viewModel.filteredLocations) { location in
-                MapAnnotation(coordinate: location.coordinate) {
-                    MapAnnotationView(locationType: location.type)
-                        .scaleEffect(selectedLocation?.id == location.id ? 1.0 : 0.7)
-                        .shadow(radius: 10)
-                        .onTapGesture {
-                            withAnimation(.easeInOut) {
-                                self.selectedLocation = location
-                            }
-                        }
-                }
-            }
+            ClusteredMapView(
+                region: $viewModel.mapRegion,
+                locations: viewModel.filteredLocations
+            )
             .ignoresSafeArea()
 
             VStack {
@@ -34,18 +23,6 @@ struct MapView: View {
                         .padding()
                         .background(.ultraThinMaterial)
                         .cornerRadius(10)
-                }
-
-                if let location = selectedLocation {
-                    LocationDetailView(location: location, isShowingDetail: $selectedLocation)
-                        .padding()
-                        .background(RoundedRectangle(cornerRadius: 25.0).fill(.ultraThinMaterial))
-                        .shadow(radius: 10)
-                        .padding(.horizontal)
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .bottom),
-                            removal: .move(edge: .bottom))
-                        )
                 }
             }
         }

@@ -127,7 +127,7 @@ final class CommunityViewModel: ObservableObject {
     private func loadSampleUsersAndPosts() {
         let u1 = UserModel(id: UUID(), username: "maria89", displayName: "María H.", avatarName: "user1", country: "México")
         let u2 = UserModel(id: UUID(), username: "carlos_rs", displayName: "Carlos R.", avatarName: "user2", country: "Argentina")
-        let u3 = UserModel(id: UUID(), username: "ana_code", displayName: "Ana C.", avatarName: "user3", country: "México")
+        // u3 = UserModel(id: UUID(), username: "ana_code", displayName: "Ana C.", avatarName: "user3", country: "México")
         
         posts = [
             PostModel(

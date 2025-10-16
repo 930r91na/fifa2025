@@ -1,10 +1,4 @@
-//
-//  MapViewModel.swift
-//  fifa2025
-//
-//  Created by Georgina on 07/10/25.
-//
-
+// fifa2025/Features/MapAndGeolocation/MapViewModel.swift
 import Foundation
 import MapKit
 import SwiftUI
@@ -25,12 +19,21 @@ final class MapViewModel: ObservableObject {
     private let denueService = DENUEService()
     private var cancellables = Set<AnyCancellable>()
     
-    // Caching Layers
-    private var locationCache = CacheManager<[MapLocation]>() // Cache for final MapLocation objects
-    private var fetchedGridKeys = Set<String>() // Tracks which grid cells have been fetched
+    private var locationCache = CacheManager<[MapLocation]>()
+    private var fetchedGridKeys = Set<String>()
+    private let gridCellSizeInMeters: CLLocationDistance = 2500
     
-    // Grid Logic
-    private let gridCellSizeInMeters: CLLocationDistance = 2500 // 2.5km grid cells
+    private actor LocationStore {
+        var locations: [MapLocation] = []
+
+        func add(newLocations: [MapLocation]) {
+            let existingIDs = Set(locations.map { $0.denueID })
+            let uniqueNewLocations = newLocations.filter { !existingIDs.contains($0.denueID) }
+            locations.append(contentsOf: uniqueNewLocations)
+        }
+    }
+    
+    private let locationStore = LocationStore()
 
     init() {
         self.mapRegion = MKCoordinateRegion(
@@ -42,13 +45,15 @@ final class MapViewModel: ObservableObject {
     }
     
     private func setupBindings() {
-        // Debounce map region changes
         $mapRegion
             .debounce(for: .milliseconds(750), scheduler: RunLoop.main)
-            .sink { [weak self] _ in self?.updateVisibleGridAndFetchData() }
+            .sink { [weak self] _ in
+                Task {
+                    await self?.updateVisibleGridAndFetchData()
+                }
+            }
             .store(in: &cancellables)
         
-        // React to filter changes by re-applying them to the already fetched data
         $selectedFilters
             .sink { [weak self] _ in self?.applyFilters() }
             .store(in: &cancellables)
@@ -57,42 +62,42 @@ final class MapViewModel: ObservableObject {
     // MARK: - Data Loading and Orchestration
     
     func loadInitialData() async {
-        self.filteredLocations = MockData.locations // Start with mock data for immediate UI
+        self.filteredLocations = MockData.locations
         await updateVisibleGridAndFetchData()
     }
     
     private func updateVisibleGridAndFetchData() {
         let centerKey = gridKey(for: mapRegion.center)
-        
+            
         guard !fetchedGridKeys.contains(centerKey) else { return }
         
-        Task {
+        Task(priority: .userInitiated) {
             isLoading = true
-            fetchedGridKeys.insert(centerKey) // Mark as fetched immediately
-            
-            // Fetch for each category sequentially to avoid overloading the API
-            for category in Array(selectedFilters) {
-                await loadBusinesses(for: category, gridKey: centerKey, near: mapRegion.center, radius: Int(gridCellSizeInMeters))
+            fetchedGridKeys.insert(centerKey)
+                
+            await withTaskGroup(of: Void.self) { group in
+                for category in Array(selectedFilters) {
+                    group.addTask {
+                        await self.loadBusinesses(for: category, gridKey: centerKey, near: self.mapRegion.center, radius: Int(self.gridCellSizeInMeters))
+                    }
+                }
             }
-            
+                
             isLoading = false
         }
     }
 
     private func loadBusinesses(for category: LocationType, gridKey: String, near coordinate: CLLocationCoordinate2D, radius: Int) async {
         let cacheKey = "\(gridKey)-\(category.rawValue)"
-        
-        // Check our ViewModel's cache first
+
         if let cachedLocations = locationCache.getValue(forKey: cacheKey) {
-            addLocationsToMap(cachedLocations)
+            await addLocationsToMap(cachedLocations)
             return
         }
-
-        // If not, fetch from the service
         do {
             let businesses = try await denueService.fetchBusinesses(for: category, gridKey: gridKey, near: coordinate, radiusInMeters: radius)
-            locationCache.setValue(businesses, forKey: cacheKey) // Cache the result
-            addLocationsToMap(businesses)
+            locationCache.setValue(businesses, forKey: cacheKey)
+            await addLocationsToMap(businesses)
         } catch {
             self.errorMessage = "Could not load some local businesses. Please check your connection."
             self.showAlert = true
@@ -101,35 +106,28 @@ final class MapViewModel: ObservableObject {
     }
     
     // MARK: - Filtering and State Management
-    
-    private func addLocationsToMap(_ newLocations: [MapLocation]) {
-        // Add only new, unique businesses to our main list
-        let existingIDs = Set(self.filteredLocations.map { $0.denueID })
-        let uniqueNewLocations = newLocations.filter { !existingIDs.contains($0.denueID) }
-        
-        self.filteredLocations.append(contentsOf: uniqueNewLocations)
+    private func addLocationsToMap(_ newLocations: [MapLocation]) async {
+        await locationStore.add(newLocations: newLocations)
+        self.filteredLocations = await locationStore.locations
     }
     
     func applyFilters() {
-        // Instead of re-fetching, we'll re-filter our cached data.
-        // This is a more advanced step. For now, we'll just handle adding/removing.
-        // The current logic in `loadBusinesses` already fetches based on `selectedFilters`.
-        // A full re-filter would involve iterating over `fetchedGridKeys` and their cached data.
+        // This is a placeholder for more advanced filtering logic.
+        // For now, the main filtering happens when fetching data.
     }
     
     func toggleFilter(for type: LocationType) {
         if selectedFilters.contains(type) {
             selectedFilters.remove(type)
-            // Remove locations of this type from the map
             filteredLocations.removeAll { $0.type == type }
         } else {
             selectedFilters.insert(type)
-            // Trigger a fetch for this new category in the current grid
-            updateVisibleGridAndFetchData()
+            Task {
+                await updateVisibleGridAndFetchData()
+            }
         }
     }
     
-    /// Generates a unique key for a grid cell.
     private func gridKey(for coordinate: CLLocationCoordinate2D) -> String {
         let latIndex = Int(coordinate.latitude * 100)
         let lonIndex = Int(coordinate.longitude * 100)

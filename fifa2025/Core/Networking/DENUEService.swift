@@ -40,25 +40,20 @@ class DENUEService {
             throw APIError.invalidURL
         }
 
-        // Use a more specific cache key: grid cell + category
         let cacheKey = "\(gridKey)-\(category.rawValue)"
 
-        // 1. Check Cache First
         if let cachedBusinesses = cache.getValue(forKey: cacheKey) {
             logger.debug("Cache hit for key: \(cacheKey).")
             return transformToMapLocations(cachedBusinesses)
         }
-        
+            
         logger.info("Cache miss for key: \(cacheKey). Fetching from network.")
-        
-        // 2. Fetch from Network if Cache Misses
-        // This TaskGroup now only fetches keywords for ONE category, reducing server load.
+            
         let categoryKeywords = keywords(for: category)
         let businessesForCategory = await fetchConcurrently(for: categoryKeywords, near: coordinate, radiusInMeters: radiusInMeters)
-        
+            
         let uniqueBusinesses = Array(Set(businessesForCategory))
         
-        // 3. Save to Cache
         cache.setValue(uniqueBusinesses, forKey: cacheKey)
         logger.info("Fetched and cached \(uniqueBusinesses.count) businesses for key: \(cacheKey).")
         
@@ -67,31 +62,48 @@ class DENUEService {
     
     /// Helper to run concurrent requests for a given list of keywords.
     private func fetchConcurrently(for keywords: [String], near coordinate: CLLocationCoordinate2D, radiusInMeters: Int) async -> [DENUEBusiness] {
-        await withTaskGroup(of: [DENUEBusiness].self, returning: [DENUEBusiness].self) { group in
-            for query in keywords {
-                group.addTask {
-                    let urlString = "https://www.inegi.org.mx/app/api/denue/v1/consulta/buscar/\(query)/\(coordinate.latitude),\(coordinate.longitude)/\(radiusInMeters)/\(self.apiToken)".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-                    
-                    guard let url = URL(string: urlString) else { return [] }
-                    
-                    do {
-                        return try await self.apiService.request(url: url)
-                    } catch {
-                        self.logger.error("Request for query '\(query)' failed: \(error.localizedDescription)")
-                        return []
-                    }
-                }
-            }
-            
-            var collected: [DENUEBusiness] = []
-            for await result in group {
-                collected.append(contentsOf: result)
-            }
-            return collected
-        }
-    }
+        var allBusinesses: [DENUEBusiness] = []
+        let batchSize = 3
+        let keywordBatches = keywords.chunks(ofCount: batchSize)
 
-    // ... (keywords, transformToMapLocations, and mapBusinessTypeToLocationType functions remain the same)
+        for batch in keywordBatches {
+            let batchResult = await withTaskGroup(of: [DENUEBusiness].self, returning: [DENUEBusiness].self) { group in
+                for query in batch {
+                    group.addTask {
+                        let urlString = "https://www.inegi.org.mx/app/api/denue/v1/consulta/buscar/\(query)/\(coordinate.latitude),\(coordinate.longitude)/\(radiusInMeters)/\(self.apiToken)".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+                            
+                            guard let url = URL(string: urlString) else { return [] }
+                            
+                            do {
+                                var urlRequest = URLRequest(url: url)
+                                urlRequest.timeoutInterval = 20.0
+                                
+                                let (data, response) = try await URLSession.shared.data(for: urlRequest)
+                                
+                                guard let httpResponse = response as? HTTPURLResponse, 200..<300 ~= httpResponse.statusCode else {
+                                    self.logger.warning("Invalid response for query: '\(query)'")
+                                    return []
+                                }
+                                
+                                return try JSONDecoder().decode([DENUEBusiness].self, from: data)
+                            } catch {
+                                self.logger.error("Request for query '\(query)' failed: \(error.localizedDescription)")
+                                return []
+                            }
+                        }
+                    }
+                    
+                    var collected: [DENUEBusiness] = []
+                    for await result in group {
+                        collected.append(contentsOf: result)
+                    }
+                    return collected
+                }
+                allBusinesses.append(contentsOf: batchResult)
+            }
+            return allBusinesses
+        }
+
     /// Maps a LocationType to its corresponding DENUE API search keywords.
     private func keywords(for type: LocationType) -> [String] {
         switch type {
@@ -166,5 +178,14 @@ extension DENUEBusiness: Hashable {
 
     static func == (lhs: DENUEBusiness, rhs: DENUEBusiness) -> Bool {
         return lhs.id == rhs.id
+    }
+}
+
+
+extension Array {
+    func chunks(ofCount size: Int) -> [[Element]] {
+        return stride(from: 0, to: count, by: size).map {
+            Array(self[$0..<Swift.min($0 + size, count)])
+        }
     }
 }

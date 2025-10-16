@@ -29,15 +29,6 @@ class HomeViewModel: ObservableObject {
     init() {
         self.calendarAuthorizationStatus = calendarManager.authorizationStatus
         
-        // When calendar events or user location update, regenerate suggestions
-        Publishers.CombineLatest(calendarManager.$events, locationManager.$location.compactMap { $0 })
-            .debounce(for: .seconds(1), scheduler: RunLoop.main) // Avoid rapid updates
-            .sink { [weak self] (events, userLocation) in
-                self?.regenerateSuggestions(events: events, userLocation: userLocation)
-            }
-            .store(in: &cancellables)
-        
-        // Update local auth status when manager's status changes
         calendarManager.$authorizationStatus
             .receive(on: DispatchQueue.main)
             .assign(to: &$calendarAuthorizationStatus)
@@ -49,9 +40,16 @@ class HomeViewModel: ObservableObject {
         }
     }
     
+    func loadInitialData() async {
+        Publishers.CombineLatest(calendarManager.$events, locationManager.$location.compactMap { $0 })
+            .debounce(for: .seconds(1), scheduler: RunLoop.main)
+            .sink { [weak self] (events, userLocation) in
+                self?.regenerateSuggestions(events: events, userLocation: userLocation)
+            }
+            .store(in: &cancellables)
+    }
+    
     func checkAndRequestPermissionsIfNeeded() {
-        // --- FIX 2: FETCH CALENDAR EVENTS IF ALREADY AUTHORIZED ---
-        // This ensures events are fetched on every app launch, not just the first time.
         if calendarAuthorizationStatus == .notDetermined {
             calendarManager.requestAccess()
         } else if calendarAuthorizationStatus == .fullAccess {

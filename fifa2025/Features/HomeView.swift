@@ -31,6 +31,9 @@ struct HomeView: View {
                     .padding()
                 }
             }
+            .task {
+                await viewModel.loadInitialData()
+            }
             .onAppear {
                 viewModel.checkAndRequestPermissionsIfNeeded()
             }

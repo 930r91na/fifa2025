@@ -10,6 +10,7 @@ internal import EventKit
 import Combine
 
 class CalendarManager: ObservableObject {
+    static let shared = CalendarManager()
     private let eventStore = EKEventStore()
     @Published var events: [Event] = []
     @Published var authorizationStatus: EKAuthorizationStatus = .notDetermined

@@ -18,13 +18,13 @@ struct ProfileView: View {
                     
                     GamificationStatsView(points: viewModel.user.points, streak: viewModel.user.streak)
                     
-                    RecentActivityView(visits: viewModel.user.recentVisits(limit: 3))
+                    RecentActivityView(visits: viewModel.user.recentVisits(limit: 2))
                     
                     CompletedChallengesView(challenges: viewModel.user.completedChallenges)
                 }
                 .padding()
             }
-            .background(Color.secondaryBackground)
+            .background(Color("BackgroudColor"))
         }
     }
 }
@@ -36,21 +36,55 @@ struct ProfileHeaderView: View {
     
     var body: some View {
         HStack {
-            Image(systemName: user.profileImageName)
-                .font(.system(size: 60))
-                .foregroundColor(Color.fifaCompAqua)
             
             VStack(alignment: .leading) {
-                Text(user.name)
+                
+                Text("FWC26")
+                    .font(.title.weight(.heavy))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.bottom,10)
+                
+                
+                Text("Perfil")
                     .font(Font.theme.largeTitle)
                     .foregroundColor(Color.primaryText)
+                    .padding(.top,1)
+                    .padding(.leading, 5)
                 
-                HStack {
-                    Image(systemName: "flag.fill")
-                    Text("Supporting: \(user.teamPreference)")
+                
+                
+                
+                HStack(alignment: .center) {
+                    Image("user_local")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 64, height: 64)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(Color.gray.opacity(0.3)))
+                        .padding(.trailing, 5)
+                    
+                    VStack(alignment: .leading) {
+                        Text(user.name)
+                            .font(Font.theme.largeTitle)
+                            .foregroundColor(Color.primaryText)
+                      
+                        Text("Supporting: \(user.teamPreference)")
+                            .foregroundColor(Color.secondaryText)
+                        
+                        Text("🇲🇽")
+                            .font(.system(size: 15))
+                    }
+                    
+                    Spacer() // Esto empuja todo hacia la izquierda
                 }
                 .font(Font.theme.subheadline)
-                .foregroundColor(Color.secondaryText)
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.secondaryBackground.opacity(0.5))
+                .cornerRadius(16)
+
+                
             }
             Spacer()
         }
@@ -66,6 +100,7 @@ struct GamificationStatsView: View {
             StatCard(title: "Total Points", value: "\(points) pts", icon: "star.fill", color: Color.fifaCompLime)
             StatCard(title: "Current Streak", value: "\(streak) Days", icon: "flame.fill", color: Color.fifaCompRed)
         }
+        
     }
 }
 

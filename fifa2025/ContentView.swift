@@ -15,23 +15,35 @@ struct ContentView: View {
         TabView {
             HomeView(communityVM: communityVM)
                 .tabItem {
-                    Label("Home", systemImage: "house.fill")
+                    Label("Inicio", systemImage: "soccerball")
                 }
             
             CommunityView(vm: communityVM)
                 .tabItem {
-                    Label("Community", systemImage: "person.3.fill")
+                    Label("Equipos", systemImage: "person.3.fill")
                 }
             
             AlbumView()
                 .tabItem {
-                    Label("Album", systemImage: "photo.stack.fill")
+                    Label {
+                        Text("Albúm")
+                    } icon: {
+                        Image("album")        // o usar un image system
+                            .resizable()
+                            .renderingMode(.template)
+                            .frame(width: 26, height: 26)
+                    }
                 }
             
             MapView()
                 .tabItem {
-                    Label("Map", systemImage: "map.fill")
+                    Label("Mapa", systemImage: "map.fill")
                 }
+            ProfileView()
+                .tabItem {
+                    Label("Profile", systemImage: "person.fill")
+                }
+
         }
         .sheet(item: $receivedCard) { card in ReceivedCardView(card: card)
         }

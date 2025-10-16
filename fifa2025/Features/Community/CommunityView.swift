@@ -29,8 +29,9 @@ struct CommunityView: View {
                         
                         Image("component1")
                             .resizable()
-                            .scaledToFit()
-                            .frame(width: 350, height: 60)
+                    
+                            .frame(width: 370, height: 60)
+                    
                         
                         // Leaderboard preview
                         LeaderboardPreviewView(entries: vm.leaderboard)

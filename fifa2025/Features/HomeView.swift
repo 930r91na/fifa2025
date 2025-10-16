@@ -61,9 +61,7 @@ struct HeaderGreetingView: View {
             
             HStack {
                 NavigationLink(destination: ProfileView()) {
-                     Image(systemName: "person.crop.circle")
-                         .font(.largeTitle)
-                         .foregroundColor(.white)
+                     
                 }
                 
                 Spacer()
@@ -275,7 +273,7 @@ struct DailyChallengeView: View {
                 
                 Image("component1")
                     .resizable()
-                    .scaledToFit()
+            
                     .frame(width: 350, height: 60)
             }
             .padding()

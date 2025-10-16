@@ -60,20 +60,4 @@ struct WorldCupCard: Identifiable, Codable, Transferable {
     static var transferRepresentation: some TransferRepresentation {
         CodableRepresentation(contentType: .worldCupCard)
     }
-    
-    func generateFileURL() -> URL? {
-            let fileName = "\(title.replacingOccurrences(of: " ", with: "_")).worldcupcard"
-            let temporaryDirectory = FileManager.default.temporaryDirectory
-            let fileURL = temporaryDirectory.appendingPathComponent(fileName)
-            
-            do {
-                let data = try JSONEncoder().encode(self)
-                try data.write(to: fileURL, options: .atomic)
-                return fileURL
-            } catch {
-                print("Failed to create temporary file for card: \(error)")
-                return nil
-            }
-        }
-
 }

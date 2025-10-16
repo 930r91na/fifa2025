@@ -23,7 +23,7 @@ struct ContentView: View {
                     Label("Community", systemImage: "person.3.fill")
                 }
             
-            AlbumView(receivedCard: $receivedCard)
+            AlbumView()
                 .tabItem {
                     Label("Album", systemImage: "photo.stack.fill")
                 }
@@ -32,6 +32,8 @@ struct ContentView: View {
                 .tabItem {
                     Label("Map", systemImage: "map.fill")
                 }
+        }
+        .sheet(item: $receivedCard) { card in ReceivedCardView(card: card)
         }
     }
 }

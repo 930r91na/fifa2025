@@ -39,15 +39,12 @@ struct fifa2025App: App {
             }
             
             defer {
-                // Stop accessing the resource when we're done
                 url.stopAccessingSecurityScopedResource()
             }
             
             do {
-                // Get the content type of the file
                 let resourceValues = try url.resourceValues(forKeys: [.contentTypeKey])
                 
-                // Check if the content type conforms to your custom UTType
                 if let contentType = resourceValues.contentType, contentType.conforms(to: .worldCupCard) {
                     
                     // Read the file's data

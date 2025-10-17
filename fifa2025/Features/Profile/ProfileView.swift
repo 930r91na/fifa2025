@@ -8,52 +8,51 @@
 import SwiftUI
 
 struct ProfileView: View {
-    @StateObject private var viewModel = ProfileViewModel()
+    @EnvironmentObject var userData: UserDataManager  // ✅ DIRECTO - SIN ViewModel
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 5) {
-                    ProfileHeaderView(user: viewModel.user)
+                    ProfileHeaderView(user: userData.user)  // ✅ DIRECTO
                     
-                    GamificationStatsView(points: viewModel.user.points, streak: viewModel.user.streak)
+                    GamificationStatsView(
+                        points: userData.user.points,     // ✅ CAMBIA EN VIVO
+                        streak: userData.user.streak
+                    )
                     
-                    RecentActivityView(visits: viewModel.user.recentVisits(limit: 2))
+                    CompletedChallengesView(challenges: userData.user.completedChallenges)
                     
-                    CompletedChallengesView(challenges: viewModel.user.completedChallenges)
+                    RecentActivityView(visits: userData.user.recentVisits(limit: 2))
                 }
                 .padding()
             }
             .background(Color("BackgroudColor"))
+            .onAppear {
+                print("🔍 Profile: \(userData.user.points) pts")  // DEBUG
+            }
         }
     }
 }
 
-// MARK: - Subviews for ProfileView
-
+// MARK: - Subviews (TODO IGUAL)
 struct ProfileHeaderView: View {
     let user: User
     
     var body: some View {
         HStack {
-            
             VStack(alignment: .leading) {
-                
                 Text("FWC26")
                     .font(.title.weight(.heavy))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.bottom,10)
                 
-                
                 Text("Perfil")
                     .font(Font.theme.largeTitle)
                     .foregroundColor(Color.primaryText)
                     .padding(.top,1)
                     .padding(.leading, 5)
-                
-                
-                
                 
                 HStack(alignment: .center) {
                     Image("user_local")
@@ -68,7 +67,7 @@ struct ProfileHeaderView: View {
                         Text(user.name)
                             .font(Font.theme.largeTitle)
                             .foregroundColor(Color.primaryText)
-                      
+                        
                         Text("Supporting: \(user.teamPreference)")
                             .foregroundColor(Color.secondaryText)
                         
@@ -76,15 +75,13 @@ struct ProfileHeaderView: View {
                             .font(.system(size: 15))
                     }
                     
-                    Spacer() // Esto empuja todo hacia la izquierda
+                    Spacer()
                 }
                 .font(Font.theme.subheadline)
                 .padding()
                 .frame(maxWidth: .infinity)
                 .background(Color.secondaryBackground.opacity(0.5))
                 .cornerRadius(16)
-
-                
             }
             Spacer()
         }
@@ -100,7 +97,6 @@ struct GamificationStatsView: View {
             StatCard(title: "Total Points", value: "\(points) pts", icon: "star.fill", color: Color.fifaCompLime)
             StatCard(title: "Current Streak", value: "\(streak) Days", icon: "flame.fill", color: Color.fifaCompRed)
         }
-        
     }
 }
 
@@ -231,7 +227,7 @@ struct ChallengeRow: View {
     }
 }
 
-
 #Preview {
     ProfileView()
+        .environmentObject(UserDataManager())
 }

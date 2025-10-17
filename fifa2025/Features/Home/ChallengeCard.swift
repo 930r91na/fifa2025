@@ -243,7 +243,7 @@ struct ChallengePopupView: View {
                                 Image(uiImage: image)
                                     .resizable()
                                     .scaledToFill()
-                                    .frame(width: 300, height: 200)
+                                    .frame(width: 280, height: 180)
                                     .clipShape(RoundedRectangle(cornerRadius: 16))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 16)
@@ -348,7 +348,7 @@ struct ChallengePopupView: View {
                                         }
                                         
                                         TextEditor(text: $reviewText)
-                                            .frame(height: 120)
+                                            .frame(height: 80)
                                             .padding(8)
                                             .foregroundColor(.white)
                                             .scrollContentBackground(.hidden)
@@ -403,7 +403,7 @@ struct ChallengePopupView: View {
                             .padding(.bottom, 30)
                         }
                     }
-                    .frame(width: 360, height: 650)
+                    .frame(width: 360, height: 540)
                     .background(
                         LinearGradient(
                             colors: [Color(hex: "#1738EA"), Color(hex: "#18257E")],

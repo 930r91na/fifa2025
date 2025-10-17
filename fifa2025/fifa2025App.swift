@@ -10,62 +10,83 @@ import UniformTypeIdentifiers
 
 @main
 struct fifa2025App: App {
+    
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
     @StateObject private var userDataManager = UserDataManager()
+    @StateObject private var communityVM = CommunityViewModel()
     
     @State private var receivedCard: WorldCupCard?
+    @State private var showSplash = true  // ← Control del splash
 
     var body: some Scene {
         WindowGroup {
-            if hasCompletedOnboarding {
-                ContentView(receivedCard: $receivedCard)
-                    .foregroundColor(Color("BackgroudColor"))
-                    .onOpenURL { url in
-                        handleIncomingCard(from: url)
+            ZStack {
+                if showSplash {
+                    SplashView(
+                        receivedCard: $receivedCard,
+                        userDataManager: userDataManager,
+                        communityVM: communityVM
+                    )
+                    .transition(.opacity)
+                } else {
+                    if hasCompletedOnboarding {
+                        ContentView(
+                            receivedCard: $receivedCard,
+                            userDataManager: userDataManager,
+                            communityVM: communityVM
+                        )
+                        .foregroundColor(Color("BackgroundColor"))
+                        .onOpenURL { url in
+                            handleIncomingCard(from: url)
+                        }
+                        .environmentObject(userDataManager)
+                        .environmentObject(communityVM)
+                    } else {
+                        OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
+                            .environmentObject(userDataManager)
                     }
-            } else {
-                OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
-                    .environmentObject(userDataManager)
+                }
+            }
+            .onAppear {
+                communityVM.connectUserData(userDataManager)
+                
+                // Ocultar splash después de 2.5 segundos
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                    withAnimation(.easeOut(duration: 0.5)) {
+                        showSplash = false
+                    }
+                }
             }
         }
     }
     
-    
     private func handleIncomingCard(from url: URL) {
-            // Start accessing the security-scoped resource
-            guard url.startAccessingSecurityScopedResource() else {
-                print("Failed to access security-scoped resource.")
-                return
-            }
-            
-            defer {
-                url.stopAccessingSecurityScopedResource()
-            }
-            
-            do {
-                let resourceValues = try url.resourceValues(forKeys: [.contentTypeKey])
-                
-                if let contentType = resourceValues.contentType, contentType.conforms(to: .worldCupCard) {
-                    
-                    // Read the file's data
-                    let data = try Data(contentsOf: url)
-                    
-                    // Decode the data back into our card object
-                    let card = try JSONDecoder().decode(WorldCupCard.self, from: data)
-                    
-                    print("Successfully received card: \(card.title)!")
-                    
-                    // Set the receivedCard state to trigger the pop-up view
-                    self.receivedCard = card
-                    
-                    // Optional: Clean up the file from the app's inbox
-                    try? FileManager.default.removeItem(at: url)
-                    
-                } else {
-                    print("Received file is not a WorldCupCard.")
-                }
-            } catch {
-                print("Failed to handle incoming card: \(error)")
-            }
+        guard url.startAccessingSecurityScopedResource() else {
+            print("Failed to access security-scoped resource.")
+            return
         }
+        
+        defer {
+            url.stopAccessingSecurityScopedResource()
+        }
+        
+        do {
+            let resourceValues = try url.resourceValues(forKeys: [.contentTypeKey])
+            
+            if let contentType = resourceValues.contentType, contentType.conforms(to: .worldCupCard) {
+                let data = try Data(contentsOf: url)
+                let card = try JSONDecoder().decode(WorldCupCard.self, from: data)
+                
+                print("Successfully received card: \(card.title)!")
+                self.receivedCard = card
+                
+                try? FileManager.default.removeItem(at: url)
+                
+            } else {
+                print("Received file is not a WorldCupCard.")
+            }
+        } catch {
+            print("Failed to handle incoming card: \(error)")
+        }
+    }
 }

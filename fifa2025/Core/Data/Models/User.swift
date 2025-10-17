@@ -8,8 +8,9 @@ import Foundation
 
 import SwiftUI
 import Combine
+import UIKit
 
-struct User: Identifiable {
+struct User: Identifiable, Equatable {  // ← AGREGADO: Equatable
     let id: UUID
     let name: String
     let profileImageName: String
@@ -20,14 +21,17 @@ struct User: Identifiable {
     var points: Int
     var streak: Int
     var completedChallenges: [Challenge]
-    
     var visits: [Visit]
+    var cards: [WorldCupCard]?
     
     func recentVisits(limit: Int) -> [Visit] {
         return Array(visits.sorted(by: { $0.date > $1.date }).prefix(limit))
     }
     
-    var cards: [WorldCupCard]?
+    // ← AGREGADO: Equatable requerido
+    static func == (lhs: User, rhs: User) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 struct Visit: Identifiable {
@@ -89,9 +93,14 @@ struct CommentModel: Identifiable {
 struct LeaderboardEntry: Identifiable, Hashable {
     let id = UUID()
     let country: String
-    let points: Int
+    var points: Int
     let flagEmoji: String
+    
 }
+
+
+
+
 
 
 final class CommunityViewModel: ObservableObject {
@@ -100,18 +109,40 @@ final class CommunityViewModel: ObservableObject {
     
     private let currentUser = UserModel(
         id: UUID(),
-        username: "oscar192010",
+        username: "oscar19",
         displayName: "Oscar",
         avatarName: "user_local",
         country: "Mexico"
     )
     
+    private var userData: UserDataManager?
+    private var hasLoadedSavedPosts = false  // ✅ Para evitar cargar múltiples veces
+    
     init() {
+        print("🔵 CommunityViewModel init()")
         loadSampleLeaderboard()
         loadSampleUsersAndPosts()
     }
     
-    // MARK: - Load simulated leaderboard
+    // ✅ Conectar UserDataManager después de la inicialización
+    func connectUserData(_ manager: UserDataManager) {
+        print("🔵 connectUserData llamado")
+        self.userData = manager
+        
+        // Solo cargar una vez
+        if !hasLoadedSavedPosts {
+            loadSavedChallengePosts()
+            hasLoadedSavedPosts = true
+        }
+    }
+    
+    func updateLeaderboard(for country: String, adding points: Int) {
+        if let index = leaderboard.firstIndex(where: { $0.country == country }) {
+            leaderboard[index].points += points
+            leaderboard.sort { $0.points > $1.points }
+        }
+    }
+    
     private func loadSampleLeaderboard() {
         leaderboard = [
             LeaderboardEntry(country: "Mexico", points: 90, flagEmoji: "🇲🇽"),
@@ -123,11 +154,9 @@ final class CommunityViewModel: ObservableObject {
         ].sorted { $0.points > $1.points }
     }
     
-    // MARK: - Load simulated posts
     private func loadSampleUsersAndPosts() {
         let u1 = UserModel(id: UUID(), username: "maria89", displayName: "María H.", avatarName: "user1", country: "México")
         let u2 = UserModel(id: UUID(), username: "carlos_rs", displayName: "Carlos R.", avatarName: "user2", country: "Argentina")
-        // u3 = UserModel(id: UUID(), username: "ana_code", displayName: "Ana C.", avatarName: "user3", country: "México")
         
         posts = [
             PostModel(
@@ -143,11 +172,57 @@ final class CommunityViewModel: ObservableObject {
                 date: Date().addingTimeInterval(-3600)
             ),
         ]
+        print("📝 Posts de muestra cargados: \(posts.count)")
     }
     
-    // MARK: - Add Challenge Post
-
-    func addChallengePost(challengeTitle: String, photo: UIImage, review: String, rating: Int, recommended: Bool) {
+    // ✅ Cargar posts guardados
+    private func loadSavedChallengePosts() {
+        print("🔵 loadSavedChallengePosts() llamado")
+        
+        guard let userData = userData else {
+            print("❌ userData es nil")
+            return
+        }
+        
+        print("✅ userData existe, cargando posts...")
+        let savedPosts = userData.convertToPostModels()
+        print("📂 Posts encontrados: \(savedPosts.count)")
+        
+        // Insertar al inicio
+        posts.insert(contentsOf: savedPosts, at: 0)
+        print("✅ Total posts después de cargar: \(posts.count)")
+        
+        // Debug: Mostrar títulos
+        for (index, post) in posts.enumerated() {
+            print("  [\(index)] \(post.businessName) - \(post.date)")
+        }
+    }
+    
+    // ✅ Guardar post permanentemente
+    func addChallengePost(
+        challengeTitle: String,
+        photo: UIImage,
+        review: String,
+        rating: Int,
+        recommended: Bool
+    ) {
+        print("🔵 addChallengePost() llamado para: \(challengeTitle)")
+        
+        guard let userData = userData else {
+            print("❌ No se puede guardar: UserDataManager no disponible")
+            return
+        }
+        
+        // Guardar en UserDefaults
+        userData.saveChallengePost(
+            challengeTitle: challengeTitle,
+            photo: photo,
+            review: review,
+            rating: rating,
+            recommended: recommended
+        )
+        
+        // Agregar a la lista actual
         let newPost = PostModel(
             id: UUID(),
             user: currentUser,
@@ -163,6 +238,7 @@ final class CommunityViewModel: ObservableObject {
         )
         
         posts.insert(newPost, at: 0)
+        print("✅ Post agregado. Total posts: \(posts.count)")
     }
     
     func toggleLike(postId: UUID) {
@@ -179,5 +255,3 @@ final class CommunityViewModel: ObservableObject {
         }
     }
 }
-
-

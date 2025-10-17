@@ -11,6 +11,7 @@ struct ExploreCityView: View {
     @ObservedObject var viewModel: HomeViewModel
     @State private var currentIndex: Int = 0
     @State private var dragOffset: CGFloat = 0
+    @State private var isDraggingHorizontally: Bool? = nil
 
     var body: some View {
         ZStack {
@@ -31,7 +32,7 @@ struct ExploreCityView: View {
                     
                     Spacer()
                 }
-                .padding(.horizontal,18)
+                .padding(.horizontal, 18)
                 .padding(.top, 10)
                 
                 Text("Te recomendamos los mejores \n lugares de acuerdo a tu calendario.")
@@ -44,8 +45,26 @@ struct ExploreCityView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 
                 if viewModel.suggestions.isEmpty {
-                     NoSuggestionsView()
-                        .frame(height: 300)
+                    
+                    VStack {
+                        
+                        
+                        Text("¡No hay sugerencias por ahora!")
+                               .font(Font.theme.body)
+                               .fontWeight(.semibold)
+                               .foregroundColor(Color.secondaryText)
+                               .multilineTextAlignment(.center)
+                           
+                           Text("¡Vuelve más tarde cuando tengas un poco de tiempo libre!")
+                               .font(Font.theme.caption)
+                               .foregroundColor(Color.secondaryText.opacity(0.8))
+                               .multilineTextAlignment(.center)
+                          
+                       
+                    }
+                    .padding(.top, -55)
+                    .frame(height: 530)
+                    
                 } else {
                     // Carousel
                     GeometryReader { geometry in
@@ -68,22 +87,41 @@ struct ExploreCityView: View {
                             }
                         }
                         .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
-                        .gesture(
-                            DragGesture()
+                        .simultaneousGesture(  // ✅ CAMBIADO: simultaneousGesture permite scroll vertical
+                            DragGesture(minimumDistance: 20)  // ✅ Aumentado para mejor detección
                                 .onChanged { value in
-                                    dragOffset = value.translation.width
+                                    // Detectar dirección del drag solo una vez al inicio
+                                    if isDraggingHorizontally == nil {
+                                        let horizontalAmount = abs(value.translation.width)
+                                        let verticalAmount = abs(value.translation.height)
+                                        
+                                        // Si el drag es más horizontal, lo manejamos nosotros
+                                        isDraggingHorizontally = horizontalAmount > verticalAmount
+                                    }
+                                    
+                                    // Solo actualizar offset si es drag horizontal
+                                    if isDraggingHorizontally == true {
+                                        dragOffset = value.translation.width
+                                    }
                                 }
                                 .onEnded { value in
-                                    let threshold: CGFloat = 50
-                                    
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                        if value.translation.width < -threshold && currentIndex < viewModel.suggestions.count - 1 {
-                                            currentIndex += 1
-                                        } else if value.translation.width > threshold && currentIndex > 0 {
-                                            currentIndex -= 1
+                                    // Solo cambiar de card si fue drag horizontal
+                                    if isDraggingHorizontally == true {
+                                        let threshold: CGFloat = 50
+                                        
+                                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                            if value.translation.width < -threshold && currentIndex < viewModel.suggestions.count - 1 {
+                                                currentIndex += 1
+                                            } else if value.translation.width > threshold && currentIndex > 0 {
+                                                currentIndex -= 1
+                                            }
+                                            dragOffset = 0
                                         }
-                                        dragOffset = 0
                                     }
+                                    
+                                    // Reset dirección
+                                    isDraggingHorizontally = nil
+                                    dragOffset = 0
                                 }
                         )
                     }
@@ -101,11 +139,11 @@ struct ExploreCityView: View {
                         }
                     }
                     .padding(.top, -50)
-                    .padding(.bottom, 20) // Adjusted padding
+                    .padding(.bottom, 20)
                 }
             }
         }
-        .frame(height: 600) // Give the ZStack a consistent height
+        .frame(height: 600)
         .padding(.top, 30)
     }
     
@@ -131,5 +169,3 @@ struct ExploreCityView: View {
         }
     }
 }
-
-

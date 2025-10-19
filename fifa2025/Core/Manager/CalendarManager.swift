@@ -60,7 +60,7 @@ class CalendarManager: ObservableObject {
         let event = EKEvent(eventStore: eventStore)
         event.title = "Visit \(suggestion.location.name)"
         event.startDate = suggestion.freeTimeSlot.start
-        // Let's schedule it for an hour by default
+       
         event.endDate = suggestion.freeTimeSlot.start.addingTimeInterval(3600)
         event.calendar = eventStore.defaultCalendarForNewEvents
 

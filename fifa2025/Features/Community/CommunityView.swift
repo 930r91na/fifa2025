@@ -15,10 +15,7 @@ struct CommunityView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Fondo
-                
-                
-                // Contenido principal
+             
                 ScrollView {
                     VStack(spacing: 0) {
                         Text("FWC26")
@@ -33,7 +30,7 @@ struct CommunityView: View {
                             .frame(width: 370, height: 60)
                     
                         
-                        // Leaderboard preview
+                     
                         LeaderboardPreviewView(entries: vm.leaderboard)
                             .padding(.horizontal)
                             .background(
@@ -42,7 +39,7 @@ struct CommunityView: View {
                                 }.opacity(0)
                             )
                         
-                        // Feed
+                     
                         
                         Text("Jugadas del día")
                             .fontWeight(.medium)
@@ -85,24 +82,24 @@ struct LeaderboardPreviewView: View {
     let entries: [LeaderboardEntry]
     @State private var animateBars = false
     
-    // Calcular el máximo de puntos para escalar las barras
+    
     private var maxPoints: Int {
         entries.prefix(3).map { $0.points }.max() ?? 1
     }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Barras del podio - Orden: 2do, 1ro, 3ro
+            
             HStack(alignment: .bottom, spacing: 12) {
-                // Reordenar para mostrar: 3ro - 1ro - 2do
+                
                 ForEach(podiumOrder(), id: \.entry.id) { item in
                     VStack(spacing: 2) {
-                        // Bandera arriba
+                   
                         Text(item.entry.flagEmoji)
                             .font(.system(size: 32))
                             .padding(.bottom, 8)
                         
-                        // Barra con gradiente
+                       
                         RoundedRectangle(cornerRadius: 12)
                             .fill(
                                 LinearGradient(
@@ -121,7 +118,7 @@ struct LeaderboardPreviewView: View {
                                     
                                     Spacer()
                                    
-                                    // Nombre del país
+                                  
                                     Text(item.entry.country)
                                         .font(.system(size: 14, weight: .regular))
                                         .foregroundColor(.white)
@@ -137,8 +134,7 @@ struct LeaderboardPreviewView: View {
             .frame(height: 220)
             .padding(.horizontal, 8)
             .padding(.bottom, 14)
-            
-            // Texto descriptivo
+      
             VStack(spacing: 4) {
                 Text("Equipos liderando el podio")
                     .fontWeight(.medium)
@@ -152,7 +148,7 @@ struct LeaderboardPreviewView: View {
             .frame(maxWidth: .infinity, alignment: .center)
             .multilineTextAlignment(.center)
             
-            // Botón para ver más
+
             Button(action: {
                 print("Botón presionado")
             }) {
@@ -183,22 +179,21 @@ struct LeaderboardPreviewView: View {
         }
     }
     
-    // Calcular altura de la barra basada en puntos (min 60, max 180)
+    
     private func barHeight(for points: Int) -> CGFloat {
         let minHeight: CGFloat = 80
         let maxHeight: CGFloat = 180
         let ratio = CGFloat(points) / CGFloat(maxPoints)
         return minHeight + (maxHeight - minHeight) * ratio
     }
-    
-    // Colores diferentes para cada posición
+   
     private func barColors(for index: Int) -> [Color] {
         switch index {
-        case 0: // Primer lugar - Dorado/Amarillo
+        case 0:
             return [Color(hex: "#18257E"), Color(hex: "#4DD0E2")]
-        case 1: // Segundo lugar - Azul FIFA
+        case 1:
             return [Color(hex: "#18257E"), Color(hex: "#B189FC")]
-        case 2: // Tercer lugar - Verde neón
+        case 2:
             return [Color(hex: "#18257E"), Color(hex: "#2F4FFC")]
         default:
             return [Color.gray, Color.gray.opacity(0.7)]
@@ -209,12 +204,11 @@ struct LeaderboardPreviewView: View {
         guard top3.count == 3 else {
             return top3.enumerated().map { (entry: $1, position: $0) }
         }
-        
-        // Orden del podio clásico: segundo (0), primero (1), tercero (2)
+      
         return [
-            (entry: top3[1], position: 1), // 2do lugar a la izquierda
-            (entry: top3[0], position: 0), // 1er lugar en el centro
-            (entry: top3[2], position: 2)  // 3er lugar a la derecha
+            (entry: top3[1], position: 1),
+            (entry: top3[0], position: 0),
+            (entry: top3[2], position: 2)
         ]
     }
 }
@@ -236,31 +230,31 @@ struct LeaderboardFullView: View {
                 VStack(spacing: 16) {
                     ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
                         HStack(spacing: 12) {
-                            // Posición
+                   
                             Text("\(index + 1)")
                                 .font(.system(size: 20, weight: .bold))
                                 .foregroundColor(positionColor(for: index))
                                 .frame(width: 30)
                             
-                            // Bandera
+                   
                             Text(entry.flagEmoji)
                                 .font(.system(size: 32))
                             
-                            // País y puntos
+              
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(entry.country)
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundColor(.white)
                                 
-                                // Barra de progreso
+                      
                                 GeometryReader { geo in
                                     ZStack(alignment: .leading) {
-                                        // Fondo de la barra
+                                    
                                         RoundedRectangle(cornerRadius: 6)
                                             .fill(Color.white.opacity(0.2))
                                             .frame(height: 12)
                                         
-                                        // Barra de progreso
+                         
                                         RoundedRectangle(cornerRadius: 6)
                                             .fill(
                                                 LinearGradient(
@@ -278,7 +272,7 @@ struct LeaderboardFullView: View {
                                 .frame(height: 12)
                             }
                             
-                            // Puntos
+                          
                             Text("\(entry.points)")
                                 .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(Color(hex: "#B1E902"))
@@ -312,9 +306,9 @@ struct LeaderboardFullView: View {
     
     private func positionColor(for index: Int) -> Color {
         switch index {
-        case 0: return Color(hex: "#FFD700") // Oro
-        case 1: return Color(hex: "#C0C0C0") // Plata
-        case 2: return Color(hex: "#CD7F32") // Bronce
+        case 0: return Color(hex: "#FFD700")
+        case 1: return Color(hex: "#C0C0C0")
+        case 2: return Color(hex: "#CD7F32")
         default: return Color.white
         }
     }
@@ -501,12 +495,12 @@ struct CommentsSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Fondo azul para toda la vista
+  
                 Color("BackgroudColor")
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // Lista de comentarios
+            
                     List {
                         ForEach(post.comments) { c in
                             VStack(alignment: .leading, spacing: 8) {
@@ -534,10 +528,10 @@ struct CommentsSheet: View {
                     .scrollContentBackground(.hidden)
                     .background(Color.clear)
                     
-                    // Barra de entrada de comentario
+              
                     HStack(spacing: 12) {
                         ZStack(alignment: .leading) {
-                            // Placeholder personalizado en blanco
+                          
                             if newComment.isEmpty {
                                 Text("Add a comment...")
                                     .foregroundColor(.white.opacity(0.5))

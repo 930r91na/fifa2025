@@ -42,7 +42,7 @@ class UserDataManager: ObservableObject {
     init() {
         print("🔵 UserDataManager init()")
         
-        // Cargar datos guardados
+      
         let savedPoints = UserDefaults.standard.integer(forKey: pointsKey)
         let savedStreak = UserDefaults.standard.integer(forKey: streakKey)
         let savedTeam = UserDefaults.standard.string(forKey: teamKey)
@@ -64,7 +64,7 @@ class UserDataManager: ObservableObject {
         
         self.user = loadedUser
         
-        // 🔍 DEBUG: Ver cuántos posts hay guardados
+    
         let savedPostsCount = loadChallengePosts().count
         print("📂 Posts guardados en UserDefaults: \(savedPostsCount)")
     }
@@ -100,24 +100,22 @@ class UserDataManager: ObservableObject {
             photoData: photoData,
             date: Date()
         )
-        
-        // Cargar posts existentes
+
         var savedPosts = loadChallengePosts()
         print("📂 Posts existentes antes de guardar: \(savedPosts.count)")
         
         savedPosts.insert(newPost, at: 0)
         print("📂 Posts después de agregar nuevo: \(savedPosts.count)")
-        
-        // Guardar actualizado
+
         do {
             let encoder = JSONEncoder()
             let data = try encoder.encode(savedPosts)
             UserDefaults.standard.set(data, forKey: postsKey)
-            UserDefaults.standard.synchronize()  // ✅ Forzar guardado inmediato
+            UserDefaults.standard.synchronize()
             
             print("💾 Post guardado exitosamente")
             
-            // 🔍 Verificar que se guardó
+            
             let verification = loadChallengePosts()
             print("✅ Verificación: \(verification.count) posts en UserDefaults")
             
@@ -141,8 +139,7 @@ class UserDataManager: ObservableObject {
             let decoder = JSONDecoder()
             let posts = try decoder.decode([SavedChallengePost].self, from: data)
             print("✅ \(posts.count) posts decodificados correctamente")
-            
-            // Debug: Mostrar títulos
+       
             for (index, post) in posts.enumerated() {
                 print("  [\(index)] \(post.challengeTitle) - \(post.date)")
             }
@@ -222,7 +219,7 @@ class UserDataManager: ObservableObject {
         user.visits.append(visit)
     }
     
-    // Resetear todo
+ 
     func resetUser() {
         UserDefaults.standard.removeObject(forKey: pointsKey)
         UserDefaults.standard.removeObject(forKey: streakKey)

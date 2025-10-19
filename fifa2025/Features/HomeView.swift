@@ -38,7 +38,7 @@ struct HomeView: View {
                     }
                     .padding()
                 }
-                .blur(radius: showChallengePopup ? 3 : 0)  // ✅ Blur a todo el contenido
+                .blur(radius: showChallengePopup ? 3 : 0)  
                 
 
                 if showChallengePopup, let challenge = selectedChallenge, let index = challengeIndexToComplete {
@@ -50,7 +50,7 @@ struct HomeView: View {
                             challengeIndexToComplete = nil
                         },
                         onComplete: { photo, review, rating, recommended in
-                            // Notificar a DailyChallengeView que complete el challenge
+                          
                             NotificationCenter.default.post(
                                 name: NSNotification.Name("CompleteChallenge"),
                                 object: nil,
@@ -68,7 +68,7 @@ struct HomeView: View {
                         }
                     )
                     .transition(.scale.combined(with: .opacity))
-                    .zIndex(100)  // ✅ Asegurar que esté por encima de todo
+                    .zIndex(100)
                 }
             }
             .task {
@@ -246,7 +246,7 @@ struct CalendarAccessPromptView: View {
     }
 }
 
-// ✅ DailyChallengeView MODIFICADO
+
 struct DailyChallengeView: View {
     @State private var challenges: [Challenge] = MockData.challengesAvailable
     @State private var showPointsAnimation = false
@@ -256,7 +256,7 @@ struct DailyChallengeView: View {
     @ObservedObject var communityVM: CommunityViewModel
     @EnvironmentObject var userData: UserDataManager
     
-    // ✅ Bindings desde HomeView
+  
     @Binding var showChallengePopup: Bool
     @Binding var selectedChallenge: Challenge?
     @Binding var challengeIndexToComplete: Int?

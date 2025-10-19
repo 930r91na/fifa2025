@@ -10,7 +10,7 @@ import Foundation
 struct ItinerarySuggestion: Identifiable {
     let id = UUID()
     let location: MapLocation
-    let travelTime: TimeInterval // Estimated travel time in seconds
+    let travelTime: TimeInterval
     let freeTimeSlot: (start: Date, end: Date)
-    let reason: String // e.g., "Fits in your 2-hour break"
+    let reason: String 
 }

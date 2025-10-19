@@ -13,7 +13,7 @@ struct SuggestionCard: View {
     
     var body: some View {
         VStack(spacing: 6) {
-            // Image with overlay
+         
             ZStack(alignment: .top) {
                 Image(suggestion.location.imageName)
                     .resizable()
@@ -27,7 +27,7 @@ struct SuggestionCard: View {
                     endPoint: .bottom
                 )
                 
-                // Time Badge
+          
                 HStack(spacing: 6) {
                     Image(systemName: "clock")
                         .font(.system(size: 14))
@@ -41,7 +41,7 @@ struct SuggestionCard: View {
                 .cornerRadius(20)
                 .padding(.top, 16)
                 
-                // Location Info
+           
                 VStack(alignment: .leading, spacing: 8) {
                     Spacer()
                     
@@ -132,11 +132,11 @@ struct ActionButton: View {
     let title: LocalizedStringKey
     let icon: String
     var isPrimary: Bool = false
-    // Add an optional action closure
+  
     var action: (() -> Void)? = nil
     
     var body: some View {
-        // Use the provided action
+     
         Button(action: { action?() }) {
             HStack {
                 Image(systemName: icon)

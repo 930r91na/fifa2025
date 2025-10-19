@@ -1,4 +1,4 @@
-// fifa2025/Features/MapAndGeolocation/MapViewModel.swift
+
 import Foundation
 import MapKit
 import SwiftUI
@@ -112,8 +112,7 @@ final class MapViewModel: ObservableObject {
     }
     
     func applyFilters() {
-        // This is a placeholder for more advanced filtering logic.
-        // For now, the main filtering happens when fetching data.
+  
     }
     
     func toggleFilter(for type: LocationType) {

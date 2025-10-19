@@ -14,13 +14,13 @@ struct WelcomeStepView: View {
         VStack(spacing: 20) {
             Spacer()
             
-            Text("Welcome to\nTurismo Local WC26")
+            Text("Bienvenido a\nTurismo Local WC26")
                 .font(Font.theme.largeTitle)
                 .fontWeight(.bold)
                 .foregroundColor(Color.primaryText)
                 .multilineTextAlignment(.center)
             
-            Text("Discover authentic local spots and support the community, right from your pocket.")
+            Text("Descubre lugares locales auténticos y apoya a la comunidad, directamente desde tu bolsillo.")
                 .font(Font.theme.subheadline)
                 .foregroundColor(Color.secondaryText)
                 .multilineTextAlignment(.center)
@@ -33,7 +33,7 @@ struct WelcomeStepView: View {
                     selectedTab = 1
                 }
             }) {
-                Text("Get Started")
+                Text("Comenzar")
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -46,5 +46,3 @@ struct WelcomeStepView: View {
         }
     }
 }
-
-

@@ -24,22 +24,22 @@ enum LocationType: Int, CaseIterable, Identifiable {
     var type: LocalizedStringKey {
         switch self {
         case .food:
-            return "Food"
+            return "Comida"
         case .shop:
-            return "Shop"
+            return "Tienda"
         case .cultural:
             return "Cultural"
         case .stadium:
-            return "Stadium"
+            return "Estadio"
         case .entertainment:
-            return "Entertainment"
+            return "Entretenimiento"
         case .souvenirs:
             return "Souvenirs"
         case .others:
-            return "Others"
+            return "Otros"
         }
     }
-    
+
     var sfSymbol: String {
         switch self {
         case .food:
@@ -88,7 +88,7 @@ struct MapLocation: Identifiable, Equatable {
         self.website = website
     }
     
-    // Conformance to Equatable to allow for easy filtering of duplicates
+   
     static func == (lhs: MapLocation, rhs: MapLocation) -> Bool {
         return lhs.denueID == rhs.denueID
     }

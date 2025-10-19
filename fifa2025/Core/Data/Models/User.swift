@@ -10,14 +10,14 @@ import SwiftUI
 import Combine
 import UIKit
 
-struct User: Identifiable, Equatable {  // ← AGREGADO: Equatable
+struct User: Identifiable, Equatable { 
     let id: UUID
     let name: String
     let profileImageName: String
     var teamPreference: String
     var opinionOnboardingPlace: Set<LocationType>?
     
-    // Gamification Stats
+
     var points: Int
     var streak: Int
     var completedChallenges: [Challenge]
@@ -27,8 +27,7 @@ struct User: Identifiable, Equatable {  // ← AGREGADO: Equatable
     func recentVisits(limit: Int) -> [Visit] {
         return Array(visits.sorted(by: { $0.date > $1.date }).prefix(limit))
     }
-    
-    // ← AGREGADO: Equatable requerido
+
     static func == (lhs: User, rhs: User) -> Bool {
         lhs.id == rhs.id
     }
@@ -116,7 +115,7 @@ final class CommunityViewModel: ObservableObject {
     )
     
     private var userData: UserDataManager?
-    private var hasLoadedSavedPosts = false  // ✅ Para evitar cargar múltiples veces
+    private var hasLoadedSavedPosts = false
     
     init() {
         print("🔵 CommunityViewModel init()")
@@ -124,7 +123,7 @@ final class CommunityViewModel: ObservableObject {
         loadSampleUsersAndPosts()
     }
     
-    // ✅ Conectar UserDataManager después de la inicialización
+
     func connectUserData(_ manager: UserDataManager) {
         print("🔵 connectUserData llamado")
         self.userData = manager
@@ -145,7 +144,7 @@ final class CommunityViewModel: ObservableObject {
     
     private func loadSampleLeaderboard() {
         leaderboard = [
-            LeaderboardEntry(country: "Mexico", points: 90, flagEmoji: "🇲🇽"),
+            LeaderboardEntry(country: "México", points: 90, flagEmoji: "🇲🇽"),
             LeaderboardEntry(country: "Argentina", points: 10, flagEmoji: "🇦🇷"),
             LeaderboardEntry(country: "Colombia", points: 45, flagEmoji: "🇨🇴"),
             LeaderboardEntry(country: "Chile", points: 30, flagEmoji: "🇨🇱"),
@@ -175,7 +174,7 @@ final class CommunityViewModel: ObservableObject {
         print("📝 Posts de muestra cargados: \(posts.count)")
     }
     
-    // ✅ Cargar posts guardados
+
     private func loadSavedChallengePosts() {
         print("🔵 loadSavedChallengePosts() llamado")
         
@@ -188,17 +187,17 @@ final class CommunityViewModel: ObservableObject {
         let savedPosts = userData.convertToPostModels()
         print("📂 Posts encontrados: \(savedPosts.count)")
         
-        // Insertar al inicio
+
         posts.insert(contentsOf: savedPosts, at: 0)
         print("✅ Total posts después de cargar: \(posts.count)")
         
-        // Debug: Mostrar títulos
+    
         for (index, post) in posts.enumerated() {
             print("  [\(index)] \(post.businessName) - \(post.date)")
         }
     }
     
-    // ✅ Guardar post permanentemente
+
     func addChallengePost(
         challengeTitle: String,
         photo: UIImage,
@@ -213,7 +212,7 @@ final class CommunityViewModel: ObservableObject {
             return
         }
         
-        // Guardar en UserDefaults
+      
         userData.saveChallengePost(
             challengeTitle: challengeTitle,
             photo: photo,
@@ -222,7 +221,7 @@ final class CommunityViewModel: ObservableObject {
             recommended: recommended
         )
         
-        // Agregar a la lista actual
+      
         let newPost = PostModel(
             id: UUID(),
             user: currentUser,

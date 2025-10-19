@@ -20,7 +20,7 @@ struct ExploreCityView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 16) {
-                // Header
+            
                 HStack(spacing: 10) {
                     Image(systemName: "calendar")
                         .font(.system(size: 20))
@@ -66,7 +66,7 @@ struct ExploreCityView: View {
                     .frame(height: 530)
                     
                 } else {
-                    // Carousel
+                   
                     GeometryReader { geometry in
                         let cardWidth = geometry.size.width * 0.85
                         let peekAmount: CGFloat = 50
@@ -87,25 +87,25 @@ struct ExploreCityView: View {
                             }
                         }
                         .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
-                        .simultaneousGesture(  // ✅ CAMBIADO: simultaneousGesture permite scroll vertical
-                            DragGesture(minimumDistance: 20)  // ✅ Aumentado para mejor detección
+                        .simultaneousGesture(
+                            DragGesture(minimumDistance: 20)
                                 .onChanged { value in
-                                    // Detectar dirección del drag solo una vez al inicio
+                                   
                                     if isDraggingHorizontally == nil {
                                         let horizontalAmount = abs(value.translation.width)
                                         let verticalAmount = abs(value.translation.height)
                                         
-                                        // Si el drag es más horizontal, lo manejamos nosotros
+                                        
                                         isDraggingHorizontally = horizontalAmount > verticalAmount
                                     }
                                     
-                                    // Solo actualizar offset si es drag horizontal
+                
                                     if isDraggingHorizontally == true {
                                         dragOffset = value.translation.width
                                     }
                                 }
                                 .onEnded { value in
-                                    // Solo cambiar de card si fue drag horizontal
+                                   
                                     if isDraggingHorizontally == true {
                                         let threshold: CGFloat = 50
                                         
@@ -119,7 +119,7 @@ struct ExploreCityView: View {
                                         }
                                     }
                                     
-                                    // Reset dirección
+                                   
                                     isDraggingHorizontally = nil
                                     dragOffset = 0
                                 }
@@ -129,7 +129,7 @@ struct ExploreCityView: View {
                     .frame(height: 530)
                     .clipped()
                     
-                    // Indicators
+        
                     HStack(spacing: 12) {
                         ForEach(0..<viewModel.suggestions.count, id: \.self) { index in
                             Circle()

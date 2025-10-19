@@ -42,21 +42,22 @@ struct TeamSelectionStepView: View {
     @Binding var selectedTab: Int
     @Binding var selectedTeam: String?
 
-    // For a real app, this would come from a data source
-    let teams = ["Mexico", "USA", "Canada", "Brazil", "Argentina", "Germany"]
+    
+    let teams = ["México", "EE. UU.", "Canadá", "Brasil", "Argentina", "Alemania"]
+
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("Who are you cheering for?")
+            Text("¿A quién estás apoyando?")
                 .font(Font.theme.headline)
                 .foregroundColor(Color.primaryText)
 
-            Text("This helps us tailor some fun surprises for you!")
+            Text("¡Esto nos ayuda a preparar algunas sorpresas divertidas para ti!")
                 .font(Font.theme.caption)
                 .foregroundColor(Color.secondaryText)
                 .padding(.bottom, 20)
 
-            // A real implementation would have flags/logos. For now, text buttons are fine.
+        
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 15) {
                 ForEach(teams, id: \.self) { team in
                     Button(action: {
@@ -79,7 +80,7 @@ struct TeamSelectionStepView: View {
             
             Spacer()
 
-            Button("I'm just exploring") {
+            Button("Solo estoy explorando") {
                  withAnimation {
                     selectedTab = 2
                 }
@@ -100,14 +101,16 @@ struct InterestSelectionStepView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("What are you excited to see?")
+        
+            Text("¿Qué te emociona ver?")
                 .font(Font.theme.headline)
                 .foregroundColor(Color.primaryText)
-            
-            Text("Choose one or more. We'll find the best spots for you.")
+
+            Text("Elige una o más opciones. Encontraremos los mejores lugares para ti.")
                 .font(Font.theme.caption)
                 .foregroundColor(Color.secondaryText)
                 .padding(.bottom, 20)
+         
 
             ForEach(interests) { interest in
                 InterestButton(
@@ -129,7 +132,7 @@ struct InterestSelectionStepView: View {
                     selectedTab = 3
                 }
             }) {
-                Text("Continue")
+                Text("Continuar")
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -179,7 +182,7 @@ struct PermissionsStepView: View {
     @EnvironmentObject var userDataManager: UserDataManager
     @Binding var hasCompletedOnboarding: Bool
     
-    // We'll use the existing managers
+
     @StateObject private var calendarManager = CalendarManager()
     @StateObject private var locationManager = LocationManager()
     
@@ -188,32 +191,32 @@ struct PermissionsStepView: View {
 
     var body: some View {
         VStack(spacing: 30) {
-            Text("One last step!")
+            Text("¡Un último paso!")
                 .font(Font.theme.headline)
                 .foregroundColor(Color.primaryText)
-            
-            // Location Permission Explanation
+
+
             PermissionExplanationView(
                 iconName: "location.fill",
-                title: "Find Spots Near You",
-                description: "Allow location access so we can show you hidden gems just around the corner.",
+                title: "Encuentra lugares cerca de ti",
+                description: "Permite el acceso a tu ubicación para mostrarte joyas ocultas justo a la vuelta de la esquina.",
                 isGranted: locationManager.isAuthorized()
             ) {
                 locationManager.requestPermission()
             }
+
             
-            // Calendar Permission Explanation
             PermissionExplanationView(
                 iconName: "calendar",
-                title: "Fit Fun Into Your Schedule",
-                description: "Allow calendar access to get smart suggestions for your free time during match days.",
+                title: "Ajusta la diversión a tu horario",
+                description: "Permite el acceso al calendario para recibir sugerencias inteligentes según tu tiempo libre durante los días de partido.",
                 isGranted: calendarManager.authorizationStatus == .fullAccess
             ) {
                 calendarManager.requestAccess()
             }
-            
+
             Spacer()
-            
+
             Button(action: {
                 userDataManager.completeOnboarding(
                     team: selectedTeam,
@@ -221,7 +224,7 @@ struct PermissionsStepView: View {
                 )
                 hasCompletedOnboarding = true
             }) {
-                Text("Finish Setup")
+                Text("Finalizar configuración")
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -263,7 +266,7 @@ struct PermissionExplanationView: View {
             Spacer()
             
             if !isGranted {
-                Button("Enable", action: onRequest)
+                Button("Habilitar", action: onRequest)
                     .buttonStyle(.borderedProminent)
                     .tint(.fifaCompPurple)
             }

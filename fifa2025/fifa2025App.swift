@@ -16,7 +16,7 @@ struct fifa2025App: App {
     @StateObject private var communityVM = CommunityViewModel()
     
     @State private var receivedCard: WorldCupCard?
-    @State private var showSplash = true  // ← Control del splash
+    @State private var showSplash = true
 
     var body: some Scene {
         WindowGroup {
@@ -50,7 +50,7 @@ struct fifa2025App: App {
             .onAppear {
                 communityVM.connectUserData(userDataManager)
                 
-                // Ocultar splash después de 2.5 segundos
+           
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                     withAnimation(.easeOut(duration: 0.5)) {
                         showSplash = false

@@ -91,7 +91,7 @@ struct MockData {
     static let challengesAvailable: [Challenge] = [
             .init(
                 id: UUID(),
-                title: "Local Taster",
+                title: "Catador local",
                 isCompleted: false,
                 description: "Visit a local restaurant",
                 detailedDescription: "Visita un restaurante local, toma una foto de evidencia y deja una reseña para compartir con la comunidad. ¡Tu experiencia inspirará a otros!",
@@ -100,7 +100,7 @@ struct MockData {
             ),
             .init(
                 id: UUID(),
-                title: "Cultural Explorer",
+                title: "Explorador cultural",
                 isCompleted: false,
                 description: "Visit a museum",
                 detailedDescription: "Explora un museo o sitio cultural, captura el momento con una foto y comparte tu experiencia con una reseña detallada.",
@@ -109,7 +109,7 @@ struct MockData {
             ),
             .init(
                 id: UUID(),
-                title: "Foodie's Delight",
+                title: "Para los amantes de la comida",
                 isCompleted: false,
                 description: "Try a new cuisine",
                 detailedDescription: "Atrévete a probar una cocina nueva, fotografía el platillo y cuéntanos qué te pareció en una reseña.",

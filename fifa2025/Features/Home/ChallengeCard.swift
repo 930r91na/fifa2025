@@ -109,7 +109,7 @@ struct PointsAnimationView: View {
 struct ChallengePopupView: View {
     let challenge: Challenge
     let onDismiss: () -> Void
-    let onComplete: (UIImage, String, Int, Bool) -> Void // ⬅️ Ahora incluye rating y recommended
+    let onComplete: (UIImage, String, Int, Bool) -> Void
     
     @State private var showImagePicker = false
     @State private var selectedImage: UIImage?
@@ -128,7 +128,7 @@ struct ChallengePopupView: View {
             
             VStack(spacing: 0) {
                 if !showReviewStep {
-                    // Paso 1: Descripción y tomar foto
+                  
                     VStack(spacing: 20) {
                         HStack {
                             Spacer()
@@ -213,7 +213,7 @@ struct ChallengePopupView: View {
                     .cornerRadius(24)
                     .shadow(color: Color(hex: "#1738EA").opacity(0.3), radius: 20)
                 } else {
-                    // Paso 2: Agregar reseña MEJORADO
+                 
                     ScrollView {
                         VStack(spacing: 24) {
                             HStack {
@@ -238,7 +238,7 @@ struct ChallengePopupView: View {
                             .padding(.horizontal, 20)
                             .padding(.top, 20)
                             
-                            // Foto tomada
+                          
                             if let image = selectedImage {
                                 Image(uiImage: image)
                                     .resizable()
@@ -253,7 +253,7 @@ struct ChallengePopupView: View {
                             }
                             
                             VStack(spacing: 20) {
-                                // Calificación con estrellas
+                             
                                 VStack(spacing: 12) {
                                     Text("¿Cómo calificarías tu experiencia?")
                                         .font(.system(size: 18, weight: .semibold))
@@ -281,14 +281,14 @@ struct ChallengePopupView: View {
                                         .fill(Color.white.opacity(0.1))
                                 )
                                 
-                                // Recomendación
+                              
                                 VStack(spacing: 12) {
                                     Text("¿Lo recomendarías?")
                                         .font(.system(size: 18, weight: .semibold))
                                         .foregroundColor(.white)
                                     
                                     HStack(spacing: 16) {
-                                        // Sí
+                                       
                                         Button(action: {
                                             withAnimation(.spring(response: 0.3)) {
                                                 recommended = true
@@ -307,7 +307,7 @@ struct ChallengePopupView: View {
                                             .cornerRadius(12)
                                         }
                                         
-                                        // No
+                                     
                                         Button(action: {
                                             withAnimation(.spring(response: 0.3)) {
                                                 recommended = false
@@ -333,7 +333,7 @@ struct ChallengePopupView: View {
                                         .fill(Color.white.opacity(0.1))
                                 )
                                 
-                                // Reseña escrita
+                     
                                 VStack(alignment: .leading, spacing: 12) {
                                     Text("Cuéntanos tu experiencia")
                                         .font(.system(size: 18, weight: .semibold))
@@ -371,7 +371,7 @@ struct ChallengePopupView: View {
                             }
                             .padding(.horizontal, 20)
                             
-                            // Botón de completar
+            
                             Button(action: {
                                 guard let image = selectedImage,
                                       !reviewText.isEmpty,

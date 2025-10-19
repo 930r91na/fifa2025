@@ -20,21 +20,25 @@ class AlbumViewModel: ObservableObject {
     }
     
     private func loadSampleCards() {
-        recentCards = [
-            // ... (your sample card data remains the same) ...
-            WorldCupCard(id: UUID(), title: "Estadio Azteca", subtitle: "Ciudad de México", hostCountry: "🇲🇽 México", imageName: "azteca", cardType: .stadium, rarity: .legendary, isOwned: true, duplicateCount: 2),
-            WorldCupCard(id: UUID(), title: "Estadio BBVA", subtitle: "Monterrey", hostCountry: "🇲🇽 México", imageName: "azteca1", cardType: .stadium, rarity: .epic, isOwned: true, duplicateCount: 1),
-            WorldCupCard(id: UUID(), title: "Estadio Akron", subtitle: "Guadalajara", hostCountry: "🇲🇽 México", imageName: "user2", cardType: .stadium, rarity: .rare, isOwned: true, duplicateCount: 0),
-            WorldCupCard(id: UUID(), title: "MetLife Stadium", subtitle: "New York/New Jersey", hostCountry: "🇺🇸 USA", imageName: "user3", cardType: .stadium, rarity: .legendary, isOwned: true, duplicateCount: 3),
-            WorldCupCard(id: UUID(), title: "SoFi Stadium", subtitle: "Los Angeles", hostCountry: "🇺🇸 USA", imageName: "cafe1", cardType: .stadium, rarity: .epic, isOwned: true, duplicateCount: 1),
-            WorldCupCard(id: UUID(), title: "BMO Field", subtitle: "Toronto", hostCountry: "🇨🇦 Canadá", imageName: "user1", cardType: .stadium, rarity: .rare, isOwned: true, duplicateCount: 0),
-            WorldCupCard(id: UUID(), title: "México", subtitle: "CONCACAF", hostCountry: "🇲🇽 México", imageName: "user2", cardType: .country, rarity: .legendary, isOwned: true, duplicateCount: 5),
-            WorldCupCard(id: UUID(), title: "Argentina", subtitle: "CONMEBOL", hostCountry: "🇦🇷 Argentina", imageName: "user3", cardType: .country, rarity: .legendary, isOwned: true, duplicateCount: 2),
-        ]
-        
-        allCards = recentCards
+            recentCards = [
+       
+                WorldCupCard(id: UUID(), title: "Ciudad de México", subtitle: "Host City", hostCountry: "🇲🇽 México", imageName: "azteca", cardType: .stadium, rarity: .epic, isOwned: true, duplicateCount: 2),
+        WorldCupCard(id: UUID(), title: "México", subtitle: "Host Country", hostCountry: "🇲🇽 México", imageName: "Country", cardType: .stadium, rarity: .legendary, isOwned: true, duplicateCount: 2),
+                WorldCupCard(id: UUID(), title: "Vancouver", subtitle: "Host City", hostCountry: "🇨🇦Canada", imageName: "Culture1", cardType: .stadium, rarity: .epic, isOwned: true, duplicateCount: 1),
+                WorldCupCard(id: UUID(), title: "United States", subtitle: "Host City", hostCountry: "🇺🇸 USA", imageName: "Culture2", cardType: .stadium, rarity: .epic, isOwned: true, duplicateCount: 0),
+                WorldCupCard(id: UUID(), title: "USA", subtitle: "New York", hostCountry: "🇺🇸 USA", imageName: "Country1", cardType: .stadium, rarity: .legendary, isOwned: true, duplicateCount: 3),
+                WorldCupCard(id: UUID(), title: "Canada", subtitle: "Maple", hostCountry: "🇨🇦Canada", imageName: "Country2", cardType: .stadium, rarity: .epic, isOwned: true, duplicateCount: 1),
+                WorldCupCard(id: UUID(), title: "Stadium", subtitle: "Football", hostCountry: "🇨🇦 Canadá,🇲🇽 México,🇺🇸 USA", imageName: "Soccer", cardType: .stadium, rarity: .rare, isOwned: true, duplicateCount: 0),
+                WorldCupCard(id: UUID(), title: "Soccer", subtitle: "Football", hostCountry: "🇨🇦 Canadá,🇲🇽 México,🇺🇸 USA", imageName: "Soccer1", cardType: .country, rarity: .rare, isOwned: true, duplicateCount: 5),
+                WorldCupCard(id: UUID(), title: "Sport", subtitle: "Football", hostCountry: "🇨🇦 Canadá,🇲🇽 México,🇺🇸 USA", imageName: "Soccer2", cardType: .country, rarity: .rare, isOwned: true, duplicateCount: 5),
+                WorldCupCard(id: UUID(), title: "Women’s World Cup", subtitle: "México 1971", hostCountry: "🇲🇽 México", imageName: "Women", cardType: .country, rarity: .legendary, isOwned: true, duplicateCount: 2),
+                WorldCupCard(id: UUID(), title: "Canada’s Soccer", subtitle: "Hall of Fame", hostCountry: "🇨🇦 Canadá", imageName: "Women1", cardType: .country, rarity: .legendary, isOwned: true, duplicateCount: 2),
+                WorldCupCard(id: UUID(), title: "Womens’ Soccer", subtitle: "USA", hostCountry: "🇺🇸 USA", imageName: "Women2", cardType: .country, rarity: .legendary, isOwned: true, duplicateCount: 2),
+            ]
+            
+            allCards = recentCards
+        }
     }
-}
 
 // MARK: - Vista Principal del Álbum
 struct AlbumView: View {
@@ -60,7 +64,7 @@ struct AlbumView: View {
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 24)
                             
-                            // Pass the viewModel to the carousel
+                      
                             AlbumCarouselView(viewModel: viewModel)
                         }
                         
@@ -70,8 +74,7 @@ struct AlbumView: View {
                 }
             }
             .background(Color("BackgroudColor").ignoresSafeArea())
-            // **FIX #3: Add a fullScreenCover to present the selected card.**
-            // This observes viewModel.selectedCard and presents the FullImageView when it's not nil.
+    
             .fullScreenCover(item: $viewModel.selectedCard) { card in
                 FullImageView(card: card)
             }
@@ -85,9 +88,9 @@ struct AlbumCarouselView: View {
     @ObservedObject var viewModel: AlbumViewModel
     @State private var currentIndex: Int = 0
     @State private var dragOffset: CGFloat = 0
+    @State private var isDraggingHorizontally: Bool? = nil
     
     var body: some View {
-        // **FIX #1: Wrap the Carousel and Share Button in a VStack.**
         VStack(spacing: 0) {
             GeometryReader { geometry in
                 let cardWidth = geometry.size.width * 0.75
@@ -114,34 +117,47 @@ struct AlbumCarouselView: View {
                     }
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
-                .gesture(
-                    DragGesture()
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 20)
                         .onChanged { value in
-                            if abs(value.translation.width) > abs(value.translation.height) {
+                  
+                            if isDraggingHorizontally == nil {
+                                let horizontalAmount = abs(value.translation.width)
+                                let verticalAmount = abs(value.translation.height)
+                                
+                               
+                                isDraggingHorizontally = horizontalAmount > verticalAmount
+                            }
+                            
+                           
+                            if isDraggingHorizontally == true {
                                 dragOffset = value.translation.width
                             }
                         }
                         .onEnded { value in
-                            guard abs(value.translation.width) > abs(value.translation.height) else {
-                                withAnimation { dragOffset = 0 }
-                                return
+                      
+                            if isDraggingHorizontally == true {
+                                let threshold: CGFloat = 50
+                                
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                    if value.translation.width < -threshold && currentIndex < viewModel.recentCards.count - 1 {
+                                        currentIndex += 1
+                                    } else if value.translation.width > threshold && currentIndex > 0 {
+                                        currentIndex -= 1
+                                    }
+                                    dragOffset = 0
+                                }
                             }
                             
-                            let threshold: CGFloat = 50
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                if value.translation.width < -threshold && currentIndex < viewModel.recentCards.count - 1 {
-                                    currentIndex += 1
-                                } else if value.translation.width > threshold && currentIndex > 0 {
-                                    currentIndex -= 1
-                                }
-                                dragOffset = 0
-                            }
+                         
+                            isDraggingHorizontally = nil
+                            dragOffset = 0
                         }
                 )
             }
-            .frame(height: 440) // Adjusted height to fit card
+            .frame(height: 440)
             
-            // It uses the card at the `currentIndex` to share the correct one.
+
             if let currentCard = viewModel.recentCards[safe: currentIndex] {
                 ShareLink(
                     item: currentCard,
@@ -152,8 +168,8 @@ struct AlbumCarouselView: View {
                 ) {
                     HStack(spacing: 10) {
                         Image(systemName: "arrow.up.forward.app.fill")
-                            .font(.system(size: 20))
-                        Text("Share Card")
+                            .font(.system(size: 17))
+                        Text("Compartir Carta")
                             .font(.system(size: 17, weight: .bold))
                     }
                     .foregroundColor(.black)
@@ -176,20 +192,18 @@ struct AlbumCarouselView: View {
         .padding(.vertical, 8)
     }
     
-    // Helper to safely access array elements
-    
     private func getScale(for index: Int) -> CGFloat {
         let distance = abs(currentIndex - index)
         if distance == 0 { return 1.0 }
-        else if distance == 1 { return 0.88 }
-        else { return 0.75 }
+        if distance == 1 { return 0.9 }
+        return 0.8
     }
     
     private func getOpacity(for index: Int) -> Double {
         let distance = abs(currentIndex - index)
-        if distance >= 2 { return 0 }
-        else if distance == 1 { return 0.6 }
-        else { return 1.0 }
+        if distance == 0 { return 1.0 }
+        if distance == 1 { return 0.7 }
+        return 0.3
     }
 }
 
@@ -208,20 +222,18 @@ struct ReceivedCardView: View {
             Color("BackgroudColor").ignoresSafeArea()
             
             VStack(spacing: 30) {
-                Text("You Received a Card!")
+                Text("¡Has recibido una carta!")
                     .font(.largeTitle.weight(.bold))
                     .foregroundColor(.white)
-                
-                // Reuse your existing WorldCupCardView
-                WorldCupCardView(card: card, viewModel: AlbumViewModel()) // Using a temporary viewModel here
+
+                WorldCupCardView(card: card, viewModel: AlbumViewModel())
                     .scaleEffect(0.9)
 
                 Button(action: {
-                    // TODO: Add logic to save the card to the user's collection
-                    print("Adding \(card.title) to collection.")
+                    print("Agregando \(card.title) a la colección.")
                     dismiss()
                 }) {
-                    Text("Add to Album")
+                    Text("Agregar al álbum")
                         .font(.headline.weight(.bold))
                         .foregroundColor(.black)
                         .padding()
@@ -242,16 +254,16 @@ struct WorldCupCardView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Carta con diseño FIFA - IMAGEN DE FONDO COMPLETA
+        
             ZStack {
-                // Imagen de fondo ocupando toda la carta
+             
                 Image(card.imageName)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(height: 380)
                     .clipped()
                 
-                // Gradiente oscuro para mejorar legibilidad del texto
+              
                 LinearGradient(
                     gradient: Gradient(colors: [
                         Color.black.opacity(0.5),
@@ -262,13 +274,13 @@ struct WorldCupCardView: View {
                     endPoint: .bottom
                 )
                 
-                // Borde con el color de rareza
+                
                 RoundedRectangle(cornerRadius: 20)
                     .stroke(card.rarity.color, lineWidth: 4)
                 
-                // Contenido superpuesto
+    
                 VStack(spacing: 0) {
-                    // Header con tipo de carta y rareza
+       
                     HStack {
                         HStack(spacing: 6) {
                             Image(systemName: card.cardType.icon)
@@ -284,7 +296,7 @@ struct WorldCupCardView: View {
                         
                         Spacer()
                         
-                        // Rareza badge
+                        
                         Text(card.rarity.rawValue)
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(.white)
@@ -298,11 +310,11 @@ struct WorldCupCardView: View {
                     
                     Spacer()
                     
-                    // Información en la parte inferior
+          
                     VStack(spacing: 8) {
                        
                         
-                        // Título del estadio/país
+        
                         Text(card.title)
                             .font(.system(size: 26, weight: .black))
                             .foregroundColor(.white)
@@ -310,13 +322,12 @@ struct WorldCupCardView: View {
                             .lineLimit(2)
                             .shadow(color: .black.opacity(0.8), radius: 4, x: 0, y: 2)
                         
-                        // Subtítulo
+            
                         Text(card.subtitle)
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(.white)
                             .shadow(color: .black.opacity(0.8), radius: 3, x: 0, y: 1)
-                        
-                        // País anfitrión
+           
                         Text(card.hostCountry)
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(.white)
@@ -325,7 +336,7 @@ struct WorldCupCardView: View {
                             .background(Color.black.opacity(0.6))
                             .cornerRadius(12)
                         
-                        // Badge de duplicados
+             
                         if card.duplicateCount > 0 {
                             HStack(spacing: 4) {
                                 Image(systemName: "doc.on.doc.fill")
@@ -357,9 +368,9 @@ struct WorldCupCardView: View {
 struct AlbumStatsView: View {
     var body: some View {
         HStack(spacing: 16) {
-            StatCardView(title: "Estadios", value: "12/16", icon: "building.2.fill", color: Color(hex: "#2F4FFC"))
-            StatCardView(title: "Países", value: "28/48", icon: "flag.fill", color: Color(hex: "#B1E902"))
-            StatCardView(title: "Duplicados", value: "15", icon: "doc.on.doc.fill", color: Color.orange)
+            StatCardView(title: "Estadios", value: "6/16", icon: "building.2.fill", color: Color(hex: "#2F4FFC"))
+            StatCardView(title: "Países", value: "3/48", icon: "flag.fill", color: Color(hex: "#B1E902"))
+            StatCardView(title: "Duplicados", value: "0", icon: "doc.on.doc.fill", color: Color.orange)
         }
         .padding(.horizontal, 24)
     }
@@ -403,7 +414,7 @@ struct AlbumCollectionGridView: View {
                 
                 HStack (spacing: 2){
                     
-                    Text("50/300")
+                    Text("12/300")
                     
                 }
                 
@@ -478,7 +489,7 @@ struct FullImageView: View {
             Color.black.ignoresSafeArea()
             
             VStack(spacing: 20) {
-                // Botón cerrar
+             
                 HStack {
                     Spacer()
                     Button(action: {
@@ -493,7 +504,7 @@ struct FullImageView: View {
                 
                 Spacer()
                 
-                // Imagen ampliada con zoom
+         
                 Image(card.imageName)
                     .resizable()
                     .scaledToFit()
@@ -518,7 +529,7 @@ struct FullImageView: View {
                     )
                     .padding()
                 
-                // Info de la carta
+    
                 VStack(spacing: 8) {
                     Text(card.title)
                         .font(.system(size: 28, weight: .bold))
@@ -548,13 +559,12 @@ struct ShareSheet: UIViewControllerRepresentable {
     let card: WorldCupCard
     
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        let text = "¡Mira esta carta de mi álbum FIFA 2026! 🏆\n\n\(card.title) - \(card.subtitle)\nRareza: \(card.rarity.rawValue)\n\n¿Quieres intercambiar?"
+        let text = "¡Mira esta carta de mi álbum! 🏆\n\n\(card.title) - \(card.subtitle)\nRareza: \(card.rarity.rawValue)\n\n¿Quieres intercambiar?"
         
         let items: [Any] = [text]
         
         let activityVC = UIActivityViewController(activityItems: items, applicationActivities: nil)
-        
-        // Incluir AirDrop y opciones de compartir
+       
         activityVC.excludedActivityTypes = [
             .addToReadingList,
             .assignToContact,

@@ -9,24 +9,24 @@ import SwiftUI
 
 struct ContentView: View {
     @Binding var receivedCard: WorldCupCard?
-    let userDataManager: UserDataManager  // ← RECIBE AQUÍ
-    let communityVM: CommunityViewModel   // ← RECIBE AQUÍ
+    let userDataManager: UserDataManager
+    let communityVM: CommunityViewModel  
     
 
     
     var body: some View {
         TabView {
-            HomeView(communityVM: communityVM)  // Ya recibe communityVM ✅
+            HomeView(communityVM: communityVM)
                 .tabItem {
                     Label("Inicio", systemImage: "soccerball")
                 }
-                .environmentObject(userDataManager)  // ← INYECTA A ESTA VISTA
+                .environmentObject(userDataManager)
             
-            CommunityView(vm: communityVM)       // Ya recibe communityVM ✅
+            CommunityView(vm: communityVM)
                 .tabItem {
                     Label("Equipos", systemImage: "person.3.fill")
                 }
-                .environmentObject(userDataManager)  // ← INYECTA A ESTA VISTA
+                .environmentObject(userDataManager)
             
             AlbumView()
                 .tabItem {
@@ -39,24 +39,24 @@ struct ContentView: View {
                             .frame(width: 26, height: 26)
                     }
                 }
-                .environmentObject(userDataManager)  // ← INYECTA A ESTA VISTA
+                .environmentObject(userDataManager)
             
             MapView()
                 .tabItem {
                     Label("Mapa", systemImage: "map.fill")
                 }
-                .environmentObject(userDataManager)  // ← INYECTA A ESTA VISTA
+                .environmentObject(userDataManager)
             
-            ProfileView()                        // Recibirá via environmentObject
+            ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person.fill")
                 }
-                .environmentObject(userDataManager)  // ← INYECTA A ESTA VISTA
+                .environmentObject(userDataManager)
         }
         .sheet(item: $receivedCard) { card in
             ReceivedCardView(card: card)
         }
-        .environmentObject(userDataManager)  // ← GLOBAL POR SI ALGUNA SUBVISTA LO NECESITA
-        .environmentObject(communityVM)      // ← GLOBAL POR SI ALGUNA SUBVISTA LO NECESITA
+        .environmentObject(userDataManager)
+        .environmentObject(communityVM)
     }
 }

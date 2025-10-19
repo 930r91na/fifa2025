@@ -129,7 +129,7 @@ class SuggestionEngine {
             
         } catch {
             logger.error("Error predicting with Core ML model: \(error)")
-            // Fall back gracefully if the model fails.
+            // Fall back if the model fails.
             return []
         }
     }

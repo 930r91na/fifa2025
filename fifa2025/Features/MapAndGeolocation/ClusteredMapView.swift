@@ -62,7 +62,7 @@ struct ClusteredMapView: UIViewRepresentable {
     }
 }
 
-// Custom Annotation View for Clusters
+
 final class ClusteringAnnotationView: MKMarkerAnnotationView {
     override init(annotation: MKAnnotation?, reuseIdentifier: String?) {
         super.init(annotation: annotation, reuseIdentifier: reuseIdentifier)

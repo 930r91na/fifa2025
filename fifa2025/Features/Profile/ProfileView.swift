@@ -8,16 +8,16 @@
 import SwiftUI
 
 struct ProfileView: View {
-    @EnvironmentObject var userData: UserDataManager  // ✅ DIRECTO - SIN ViewModel
+    @EnvironmentObject var userData: UserDataManager  
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 5) {
-                    ProfileHeaderView(user: userData.user)  // ✅ DIRECTO
+                    ProfileHeaderView(user: userData.user)
                     
                     GamificationStatsView(
-                        points: userData.user.points,     // ✅ CAMBIA EN VIVO
+                        points: userData.user.points,
                         streak: userData.user.streak
                     )
                     
@@ -29,7 +29,7 @@ struct ProfileView: View {
             }
             .background(Color("BackgroudColor"))
             .onAppear {
-                print("🔍 Profile: \(userData.user.points) pts")  // DEBUG
+                print("🔍 Profile: \(userData.user.points) pts")
             }
         }
     }

@@ -40,7 +40,7 @@ struct MapView: View {
 // MARK: - Placeholder Subviews
 
 struct FilterButtonsView: View {
-    @ObservedObject var viewModel: MapViewModel // Correct way to pass a ViewModel to a subview
+    @ObservedObject var viewModel: MapViewModel
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -91,34 +91,32 @@ struct LocationDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Header
+       
                 VStack(alignment: .leading) {
                     Text(location.name)
                         .font(.largeTitle.weight(.bold))
                         .foregroundColor(Color.primaryText)
-                    Text(location.description) // Business Category
+                    Text(location.description)
                         .font(.headline)
                         .foregroundColor(Color.secondaryText)
                 }
                                 
-                // Address (only shows if available and not empty)
                 if let address = location.address, !address.isEmpty {
                     InfoRow(icon: "mappin.and.ellipse", title: "Address", content: address)
                 }
                 
-                // Phone Number (only shows if available and not empty)
+     
                 if let phoneNumber = location.phoneNumber, !phoneNumber.isEmpty {
                     InfoRow(icon: "phone.fill", title: "Phone", content: phoneNumber, isLink: true, linkURL: "tel:\(phoneNumber)")
                 }
                 
-                // Website (only shows if available and not empty)
+  
                 if let website = location.website, !website.isEmpty {
-                    // A basic check to ensure the URL is valid
+        
                     let validUrlString = website.hasPrefix("http") ? website : "http://\(website)"
                     InfoRow(icon: "safari.fill", title: "Website", content: website, isLink: true, linkURL: validUrlString)
                 }
 
-                // Women in sports highlight
                 if location.promotesWomenInSports {
                     HStack {
                         Image(systemName: "star.fill").foregroundColor(.yellow)
@@ -144,7 +142,7 @@ struct LocationDeniedView: View {
             Text("Displaying spots in Mexico City by default. To see places near you, please enable location services.")
                 .font(.subheadline)
             
-            // Button to open app settings
+
             if let url = URL(string: UIApplication.openSettingsURLString) {
                 Button("Open Settings") {
                     UIApplication.shared.open(url)

@@ -43,18 +43,18 @@ struct SplashView: View {
                 }
             }
             .onAppear {
-                // Animación del logo
+             
                 withAnimation(.spring(response: 0.8, dampingFraction: 0.6)) {
                     logoScale = 1.0
                     logoOpacity = 1.0
                 }
                 
-                // Rotación sutil
+    
                 withAnimation(.easeInOut(duration: 1.0).delay(0.3)) {
                     rotationAngle = 360
                 }
                 
-                // Transición a la app principal
+    
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                     withAnimation(.easeOut(duration: 0.5)) {
                         isActive = true

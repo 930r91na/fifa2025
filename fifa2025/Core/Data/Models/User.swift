@@ -4,25 +4,132 @@
 //
 //  Created by Georgina on 02/10/25.
 //
-import Foundation
 
+import Foundation
 import SwiftUI
 import Combine
 import UIKit
 
-struct User: Identifiable, Equatable { 
+
+
+// MARK: - User Archetype (NUEVO)
+enum UserArchetype: String, Codable, CaseIterable {
+    case gourmetFoodie = "Gourmet_Foodie"
+    case streetFoodFan = "Street_Food_Fan"
+    case artHistoryBuff = "Art_History_Buff"
+    case nightlifeSeeker = "Nightlife_Seeker"
+    case sportsFanatic = "Sports_Fanatic"
+    case budgetBackpacker = "Budget_Backpacker"
+    case luxuryTraveler = "Luxury_Traveler"
+    case familyWithKids = "Family_With_Kids"
+    case digitalNomad = "Digital_Nomad"
+    case businessTraveler = "Business_Traveler"
+    case casualTourist = "Casual_Tourist"
+    case localExplorer = "Local_Explorer"
+    
+    var displayName: String {
+        switch self {
+        case .gourmetFoodie: return "🍽️ Foodie Gourmet"
+        case .streetFoodFan: return "🌮 Fan de Comida Callejera"
+        case .artHistoryBuff: return "🎨 Amante del Arte e Historia"
+        case .nightlifeSeeker: return "🎉 Buscador de Vida Nocturna"
+        case .sportsFanatic: return "⚽ Fanático del Deporte"
+        case .budgetBackpacker: return "🎒 Viajero Económico"
+        case .luxuryTraveler: return "💎 Viajero de Lujo"
+        case .familyWithKids: return "👨‍👩‍👧‍👦 Familia con Niños"
+        case .digitalNomad: return "💻 Nómada Digital"
+        case .businessTraveler: return "💼 Viajero de Negocios"
+        case .casualTourist: return "📸 Turista Casual"
+        case .localExplorer: return "🗺️ Explorador Local"
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .gourmetFoodie:
+            return "Buscas restaurantes únicos y experiencias culinarias auténticas"
+        case .streetFoodFan:
+            return "Te encanta la comida callejera y lugares locales económicos"
+        case .artHistoryBuff:
+            return "Museos, galerías y sitios históricos son tu pasión"
+        case .nightlifeSeeker:
+            return "Bares, clubes y entretenimiento nocturno"
+        case .sportsFanatic:
+            return "Estadios, bares deportivos y eventos en vivo"
+        case .budgetBackpacker:
+            return "Maximizas experiencias con presupuesto limitado"
+        case .luxuryTraveler:
+            return "Prefieres lugares exclusivos y servicios premium"
+        case .familyWithKids:
+            return "Lugares familiares, seguros y divertidos para niños"
+        case .digitalNomad:
+            return "Cafés con WiFi, espacios de coworking y lugares tranquilos"
+        case .businessTraveler:
+            return "Eficiencia, lugares cerca de tu hotel y opciones rápidas"
+        case .casualTourist:
+            return "Balance entre atracciones populares y joyas ocultas"
+        case .localExplorer:
+            return "Vives aquí y buscas descubrir nuevos lugares constantemente"
+        }
+    }
+    
+    var interests: Set<LocationType> {
+        switch self {
+        case .gourmetFoodie, .streetFoodFan:
+            return [.food]
+        case .artHistoryBuff:
+            return [.cultural, .souvenirs]
+        case .nightlifeSeeker:
+            return [.entertainment, .food]
+        case .sportsFanatic:
+            return [.stadium, .entertainment, .food]
+        case .budgetBackpacker, .localExplorer:
+            return [.food, .cultural, .entertainment, .others]
+        case .luxuryTraveler:
+            return [.food, .shop, .cultural]
+        case .familyWithKids:
+            return [.food, .entertainment, .cultural, .others]
+        case .digitalNomad:
+            return [.food, .cultural, .others]
+        case .businessTraveler:
+            return [.food, .shop]
+        case .casualTourist:
+            return [.food, .cultural, .shop, .entertainment]
+        }
+    }
+}
+
+// MARK: - User Model (ACTUALIZADO)
+struct User: Identifiable, Equatable, Codable {
     let id: UUID
     let name: String
     let profileImageName: String
     var teamPreference: String
     var opinionOnboardingPlace: Set<LocationType>?
     
-
+    // 🆕 NUEVO: Arquetipo del usuario
+    var archetype: UserArchetype?
+    
     var points: Int
     var streak: Int
     var completedChallenges: [Challenge]
     var visits: [Visit]
     var cards: [WorldCupCard]?
+    
+    // NUEVO: Propiedad computada para obtener intereses
+    var interests: Set<LocationType> {
+        // Prioridad: onboarding preferences > archetype interests > default
+        if let onboardingPrefs = opinionOnboardingPlace, !onboardingPrefs.isEmpty {
+            return onboardingPrefs
+        }
+        
+        if let archetype = archetype {
+            return archetype.interests
+        }
+        
+        // Default: casual tourist interests
+        return [.food, .cultural, .shop, .entertainment]
+    }
     
     func recentVisits(limit: Int) -> [Visit] {
         return Array(visits.sorted(by: { $0.date > $1.date }).prefix(limit))
@@ -33,15 +140,17 @@ struct User: Identifiable, Equatable {
     }
 }
 
-struct Visit: Identifiable {
+// MARK: - Visit Model (ACTUALIZADO)
+struct Visit: Identifiable, Codable {
     let id: UUID
     let location: MapLocation
     let date: Date
-    let rating: Int 
+    let rating: Int
     let comment: String?
 }
 
-struct Challenge: Identifiable {
+// MARK: - Challenge Model (ACTUALIZADO)
+struct Challenge: Identifiable, Codable {
     let id: UUID
     let title: String
     var isCompleted: Bool
@@ -49,16 +158,27 @@ struct Challenge: Identifiable {
     let detailedDescription: String
     let pointsAwarded: Int
     var completionDate: Date?
-    var photoEvidence: UIImage?
+    
+    // Nota: UIImage no es Codable, usar Data
+    var photoEvidenceData: Data?
     var review: String?
     var rating: Int?
     var recommended: Bool?
+    
+    var photoEvidence: UIImage? {
+        get {
+            guard let data = photoEvidenceData else { return nil }
+            return UIImage(data: data)
+        }
+        set {
+            photoEvidenceData = newValue?.jpegData(compressionQuality: 0.7)
+        }
+    }
 }
 
 
 
-
-// MARK: - Models
+// MARK: - Models (Posts & Community)
 struct PostModel: Identifiable {
     let id: UUID
     let user: UserModel
@@ -70,7 +190,7 @@ struct PostModel: Identifiable {
     var comments: [CommentModel]
     let date: Date
     var challengePhoto: UIImage?
-    var rating: Int?           
+    var rating: Int?
     var recommended: Bool?
 }
 
@@ -94,14 +214,9 @@ struct LeaderboardEntry: Identifiable, Hashable {
     let country: String
     var points: Int
     let flagEmoji: String
-    
 }
 
-
-
-
-
-
+// MARK: - CommunityViewModel (sin cambios necesarios)
 final class CommunityViewModel: ObservableObject {
     @Published var posts: [PostModel] = []
     @Published var leaderboard: [LeaderboardEntry] = []
@@ -123,12 +238,10 @@ final class CommunityViewModel: ObservableObject {
         loadSampleUsersAndPosts()
     }
     
-
     func connectUserData(_ manager: UserDataManager) {
         print("🔵 connectUserData llamado")
         self.userData = manager
         
-        // Solo cargar una vez
         if !hasLoadedSavedPosts {
             loadSavedChallengePosts()
             hasLoadedSavedPosts = true
@@ -174,7 +287,6 @@ final class CommunityViewModel: ObservableObject {
         print("📝 Posts de muestra cargados: \(posts.count)")
     }
     
-
     private func loadSavedChallengePosts() {
         print("🔵 loadSavedChallengePosts() llamado")
         
@@ -187,17 +299,14 @@ final class CommunityViewModel: ObservableObject {
         let savedPosts = userData.convertToPostModels()
         print("📂 Posts encontrados: \(savedPosts.count)")
         
-
         posts.insert(contentsOf: savedPosts, at: 0)
         print("✅ Total posts después de cargar: \(posts.count)")
         
-    
         for (index, post) in posts.enumerated() {
             print("  [\(index)] \(post.businessName) - \(post.date)")
         }
     }
     
-
     func addChallengePost(
         challengeTitle: String,
         photo: UIImage,
@@ -212,7 +321,6 @@ final class CommunityViewModel: ObservableObject {
             return
         }
         
-      
         userData.saveChallengePost(
             challengeTitle: challengeTitle,
             photo: photo,
@@ -221,7 +329,6 @@ final class CommunityViewModel: ObservableObject {
             recommended: recommended
         )
         
-      
         let newPost = PostModel(
             id: UUID(),
             user: currentUser,

@@ -5,10 +5,7 @@
 //  Created by Georgina on 12/10/25.
 //
 
-//
-//  UserDataManager.swift
-//  fifa2025
-//
+
 
 import Foundation
 import Combine
@@ -30,50 +27,94 @@ class UserDataManager: ObservableObject {
     
     @Published var user: User {
         didSet {
+            saveUser() // 🆕 Guardar usuario completo cuando cambie
+        }
+    }
+    
+    // Keys para UserDefaults
+    private let userKey = "savedUser" // 🆕 NUEVO: Guardar usuario completo
+    private let pointsKey = "userPoints"
+    private let streakKey = "userStreak"
+    private let teamKey = "userTeam"
+    private let archetypeKey = "userArchetype" // 🆕 NUEVO
+    private let postsKey = "savedChallengePosts"
+    
+    init() {
+        print("UserDataManager init()")
+        
+        // 1. Inicializa user con un valor por defecto (obligatorio)
+        self.user = MockData.user  // ← ¡PRIMERO!
+        
+        // 2. AHORA sí puedes usar self.loadUser()
+        if let loadedUser = loadUser() {
+            self.user = loadedUser
+            print("Usuario completo cargado desde UserDefaults")
+            print("   - Arquetipo: \(loadedUser.archetype?.displayName ?? "None")")
+        } else {
+            // Fallback: cargar valores individuales
+            let savedPoints = UserDefaults.standard.integer(forKey: pointsKey)
+            let savedStreak = UserDefaults.standard.integer(forKey: streakKey)
+            let savedTeam = UserDefaults.standard.string(forKey: teamKey)
+            let savedArchetypeRaw = UserDefaults.standard.string(forKey: archetypeKey)
+            
+            if savedPoints > 0 { self.user.points = savedPoints }
+            if savedStreak > 0 { self.user.streak = savedStreak }
+            if let team = savedTeam { self.user.teamPreference = team }
+            if let raw = savedArchetypeRaw,
+               let archetype = UserArchetype(rawValue: raw) {
+                self.user.archetype = archetype
+            }
+        }
+        
+        let savedPostsCount = loadChallengePosts().count
+        print("Posts guardados: \(savedPostsCount)")
+    }
+    
+    // MARK: - 🆕 Guardar/Cargar Usuario Completo
+    
+    private func saveUser() {
+        do {
+            let encoder = JSONEncoder()
+            let data = try encoder.encode(user)
+            UserDefaults.standard.set(data, forKey: userKey)
+            
+            // También guardar valores individuales para compatibilidad
+            UserDefaults.standard.set(user.points, forKey: pointsKey)
+            UserDefaults.standard.set(user.streak, forKey: streakKey)
+            UserDefaults.standard.set(user.teamPreference, forKey: teamKey)
+            UserDefaults.standard.set(user.archetype?.rawValue, forKey: archetypeKey)
+            
+            print("💾 Usuario guardado completamente")
+        } catch {
+            print("❌ Error al guardar usuario: \(error)")
+            // Fallback: guardar solo lo básico
             saveBasicStats()
         }
     }
     
-    private let pointsKey = "userPoints"
-    private let streakKey = "userStreak"
-    private let teamKey = "userTeam"
-    private let postsKey = "savedChallengePosts"
-    
-    init() {
-        print("🔵 UserDataManager init()")
-        
-      
-        let savedPoints = UserDefaults.standard.integer(forKey: pointsKey)
-        let savedStreak = UserDefaults.standard.integer(forKey: streakKey)
-        let savedTeam = UserDefaults.standard.string(forKey: teamKey)
-        
-        var loadedUser = MockData.user
-        
-        if savedPoints > 0 {
-            loadedUser.points = savedPoints
-            print("✅ Puntos cargados: \(savedPoints)")
-        }
-        if savedStreak > 0 {
-            loadedUser.streak = savedStreak
-            print("✅ Racha cargada: \(savedStreak)")
-        }
-        if let team = savedTeam {
-            loadedUser.teamPreference = team
-            print("✅ Equipo cargado: \(team)")
+    private func loadUser() -> User? {
+        guard let data = UserDefaults.standard.data(forKey: userKey) else {
+            print("⚠️ No hay usuario guardado en key: \(userKey)")
+            return nil
         }
         
-        self.user = loadedUser
-        
-    
-        let savedPostsCount = loadChallengePosts().count
-        print("📂 Posts guardados en UserDefaults: \(savedPostsCount)")
+        do {
+            let decoder = JSONDecoder()
+            let user = try decoder.decode(User.self, from: data)
+            print("✅ Usuario decodificado correctamente")
+            return user
+        } catch {
+            print("❌ Error al decodificar usuario: \(error)")
+            return nil
+        }
     }
     
-    // MARK: - Guardar solo lo básico
+    // MARK: - Guardar solo lo básico (fallback)
     private func saveBasicStats() {
         UserDefaults.standard.set(user.points, forKey: pointsKey)
         UserDefaults.standard.set(user.streak, forKey: streakKey)
         UserDefaults.standard.set(user.teamPreference, forKey: teamKey)
+        UserDefaults.standard.set(user.archetype?.rawValue, forKey: archetypeKey)
     }
     
     // MARK: - Guardar post de desafío
@@ -114,7 +155,6 @@ class UserDataManager: ObservableObject {
             UserDefaults.standard.synchronize()
             
             print("💾 Post guardado exitosamente")
-            
             
             let verification = loadChallengePosts()
             print("✅ Verificación: \(verification.count) posts en UserDefaults")
@@ -191,13 +231,23 @@ class UserDataManager: ObservableObject {
         return converted
     }
     
-    // MARK: - Métodos existentes
-    func completeOnboarding(team: String?, interests: Set<LocationType>) {
+    // MARK: - 🆕 ACTUALIZADO: Complete Onboarding con Arquetipo
+    func completeOnboarding(
+        team: String?,
+        archetype: UserArchetype?, // 🆕 NUEVO parámetro
+        interests: Set<LocationType>
+    ) {
         user.teamPreference = team ?? "Explorer"
+        user.archetype = archetype // 🆕 Guardar arquetipo
         user.opinionOnboardingPlace = interests
+        
         print("✅ Onboarding completado")
+        print("   Team: \(team ?? "None")")
+        print("   Archetype: \(archetype?.displayName ?? "None")")
+        print("   Interests: \(interests.map { String(describing: $0) })")
     }
     
+    // MARK: - Métodos existentes (sin cambios)
     func addPoints(_ points: Int) {
         user.points += points
         print("➕ \(points) puntos. Total: \(user.points)")
@@ -217,13 +267,15 @@ class UserDataManager: ObservableObject {
     
     func addVisit(_ visit: Visit) {
         user.visits.append(visit)
+        print("📍 Visita agregada: \(visit.location.name) - Rating: \(visit.rating)")
     }
     
- 
     func resetUser() {
+        UserDefaults.standard.removeObject(forKey: userKey)
         UserDefaults.standard.removeObject(forKey: pointsKey)
         UserDefaults.standard.removeObject(forKey: streakKey)
         UserDefaults.standard.removeObject(forKey: teamKey)
+        UserDefaults.standard.removeObject(forKey: archetypeKey)
         UserDefaults.standard.removeObject(forKey: postsKey)
         self.user = MockData.user
         print("🗑️ Datos reseteados")

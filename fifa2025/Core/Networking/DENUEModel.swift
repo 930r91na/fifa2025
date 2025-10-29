@@ -8,7 +8,7 @@
 import Foundation
 
 // The model now matches the detailed JSON response from the DENUE API.
-struct DENUEBusiness: Codable {
+struct DENUEBusiness: Codable , Hashable {
     let id: String
     let name: String
     let businessCategory: String

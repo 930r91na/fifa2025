@@ -1,4 +1,3 @@
-
 import Foundation
 import MapKit
 import SwiftUI
@@ -62,7 +61,7 @@ final class MapViewModel: ObservableObject {
     // MARK: - Data Loading and Orchestration
     
     func loadInitialData() async {
-        self.filteredLocations = MockData.locations
+        self.filteredLocations = MockData.sampleLocations
         await updateVisibleGridAndFetchData()
     }
     
@@ -112,7 +111,8 @@ final class MapViewModel: ObservableObject {
     }
     
     func applyFilters() {
-  
+        // Este método puede implementarse para filtrar locations adicionales si es necesario
+        // Por ahora, el filtrado se maneja en toggleFilter
     }
     
     func toggleFilter(for type: LocationType) {

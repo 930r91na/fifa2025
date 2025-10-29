@@ -278,7 +278,9 @@
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = fifa2025;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Necesitamos acceso a la cámara para tomar fotos de evidencia";
 				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = fifa2025;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Necesitamos acceso a tu ubicación para ofrecerte recomendaciones personalizadas";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "fifa loocation required";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Necesitamos tu ubicación para mostrarte lugares cercanos y personalizar tu experiencia";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = fifa2025;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -319,7 +321,9 @@
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = fifa2025;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Necesitamos acceso a la cámara para tomar fotos de evidencia";
 				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = fifa2025;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Necesitamos acceso a tu ubicación para ofrecerte recomendaciones personalizadas";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "fifa loocation required";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Necesitamos tu ubicación para mostrarte lugares cercanos y personalizar tu experiencia";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = fifa2025;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

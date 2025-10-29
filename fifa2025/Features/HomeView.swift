@@ -6,17 +6,129 @@
 
 import SwiftUI
 internal import EventKit
+// Al final del archivo, agrega:
+
+struct LocationPickerSection: View {
+    @ObservedObject var viewModel: HomeViewModel
+    @State private var selectedCategory: SimpleLocationService.LocationCategory = .neighborhood
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("🧪 Probar ubicaciones de CDMX")
+                    .font(Font.theme.subheadline)
+                    .foregroundColor(Color.primaryText)
+                
+                Spacer()
+                
+                // Category Picker
+                Menu {
+                    ForEach([
+                        SimpleLocationService.LocationCategory.neighborhood,
+                        .commercial,
+                        .stadium,
+                        .museum,
+                        .park
+                    ], id: \.self) { category in
+                        Button(action: { selectedCategory = category }) {
+                            Text(category.displayName)
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(selectedCategory.displayName)
+                            .font(.system(size: 12, weight: .semibold))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 10))
+                    }
+                    .foregroundColor(.fifaCompPurple)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.fifaCompPurple.opacity(0.2))
+                    .cornerRadius(8)
+                }
+            }
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(SimpleLocationService.locations(for: selectedCategory), id: \.self) { location in
+                        LocationTestButton(
+                            location: location,
+                            viewModel: viewModel
+                        )
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            
+            Text("Las sugerencias cambiarán según la ubicación seleccionada")
+                .font(.system(size: 10))
+                .foregroundColor(Color.secondaryText.opacity(0.7))
+        }
+        .padding()
+        .background(Color.secondaryBackground.opacity(0.5))
+        .cornerRadius(16)
+    }
+}
+
+struct LocationTestButton: View {
+    let location: SimpleLocationService.PresetLocation
+    @ObservedObject var viewModel: HomeViewModel
+    
+    @State private var isPressed = false
+    
+    var body: some View {
+        Button(action: {
+            withAnimation(.spring(response: 0.3)) {
+                isPressed = true
+            }
+            
+            viewModel.changeTestLocation(to: location)
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation {
+                    isPressed = false
+                }
+            }
+        }) {
+            VStack(spacing: 6) {
+                Text(location.emoji)
+                    .font(.system(size: 28))
+                
+                Text(location.name)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .frame(height: 28)
+            }
+            .frame(width: 85, height: 75)
+            .background(
+                isPressed
+                    ? Color.fifaCompPurple
+                    : Color.secondaryBackground.opacity(0.8)
+            )
+            .cornerRadius(12)
+            .scaleEffect(isPressed ? 0.95 : 1.0)
+            .shadow(
+                color: isPressed ? Color.fifaCompPurple.opacity(0.5) : .clear,
+                radius: 10
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
     @ObservedObject var communityVM: CommunityViewModel
     @EnvironmentObject var userData: UserDataManager
     
-
     @State private var showChallengePopup = false
     @State private var selectedChallenge: Challenge?
     @State private var challengeIndexToComplete: Int?
-     
+    
     var body: some View {
         NavigationView {
             ZStack {
@@ -24,10 +136,18 @@ struct HomeView: View {
                 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
+                     
+          
+
+                        
                         HeaderGreetingView(name: "Óscar")
                         ScoreView(points: userData.user.points)
-                        ExploreCityView(viewModel: viewModel)
                         
+                   
+                        LocationPickerSection(viewModel: viewModel)
+                         
+                        
+                        ExploreCityView(viewModel: viewModel)
                         
                         DailyChallengeView(
                             communityVM: communityVM,
@@ -38,9 +158,8 @@ struct HomeView: View {
                     }
                     .padding()
                 }
-                .blur(radius: showChallengePopup ? 3 : 0)  
+                .blur(radius: showChallengePopup ? 3 : 0)
                 
-
                 if showChallengePopup, let challenge = selectedChallenge, let index = challengeIndexToComplete {
                     ChallengePopupView(
                         challenge: challenge,
@@ -50,7 +169,6 @@ struct HomeView: View {
                             challengeIndexToComplete = nil
                         },
                         onComplete: { photo, review, rating, recommended in
-                          
                             NotificationCenter.default.post(
                                 name: NSNotification.Name("CompleteChallenge"),
                                 object: nil,
@@ -82,9 +200,76 @@ struct HomeView: View {
             } message: {
                 Text(viewModel.scheduleAlertMessage)
             }
+            .alert(isPresented: $viewModel.showCSVAlert) {
+                Alert(
+                    title: Text(viewModel.csvErrorMessage == nil ? "✅ CSV Generado" : "❌ Error"),
+                    message: Text(viewModel.csvErrorMessage ?? viewModel.scheduleAlertMessage + "\n\n¿Quieres compartirlo?"),
+                    primaryButton: viewModel.csvErrorMessage == nil ? .default(Text("Compartir")) {
+                        viewModel.shareCSV()
+                    } : .cancel(),
+                    secondaryButton: .cancel(Text("OK"))
+                )
+            }
         }
     }
 }
+
+// MARK: - CSV Option Card Component
+struct CSVOptionCard: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let badge: String
+    let badgeColor: Color
+    let estimatedCost: String
+    let backgroundColor: Color
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // Icon
+            Text(icon)
+                .font(.system(size: 32))
+            
+            // Content
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(title)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    Text(badge)
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(badgeColor)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(badgeColor.opacity(0.2))
+                        .cornerRadius(4)
+                }
+                
+                Text(subtitle)
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.85))
+                    .lineLimit(2)
+                
+                Text(estimatedCost)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.white.opacity(0.7))
+            }
+            
+            Spacer()
+            
+            // Arrow
+            Image(systemName: "arrow.right.circle.fill")
+                .font(.system(size: 24))
+                .foregroundColor(.white.opacity(0.8))
+        }
+        .padding(14)
+        .background(backgroundColor)
+        .cornerRadius(12)
+        .shadow(color: backgroundColor.opacity(0.3), radius: 8, x: 0, y: 4)
+    }
+}
+
 
 // MARK: - Subviews (sin cambios)
 struct HeaderGreetingView: View {
@@ -212,17 +397,13 @@ struct ScoreView: View {
 struct NoSuggestionsView: View {
     var body: some View {
         VStack {
-            
-            
             Text("No suggestions right now.")
                 .font(Font.theme.body)
                 .foregroundColor(Color.secondaryText)
             Text("Check back when you have more free time!")
                 .font(Font.theme.caption)
                 .foregroundColor(Color.secondaryText)
-           
         }
-   
     }
 }
 
@@ -246,7 +427,6 @@ struct CalendarAccessPromptView: View {
     }
 }
 
-
 struct DailyChallengeView: View {
     @State private var challenges: [Challenge] = MockData.challengesAvailable
     @State private var showPointsAnimation = false
@@ -256,7 +436,6 @@ struct DailyChallengeView: View {
     @ObservedObject var communityVM: CommunityViewModel
     @EnvironmentObject var userData: UserDataManager
     
-  
     @Binding var showChallengePopup: Bool
     @Binding var selectedChallenge: Challenge?
     @Binding var challengeIndexToComplete: Int?
@@ -375,4 +554,5 @@ struct DailyChallengeView: View {
 
 #Preview {
     HomeView(communityVM: CommunityViewModel())
+        .environmentObject(UserDataManager())
 }

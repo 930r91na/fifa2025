@@ -5,6 +5,7 @@
 //  Created by Georgina on 12/10/25.
 //
 
+
 import SwiftUI
 
 struct ExploreCityView: View {
@@ -45,34 +46,28 @@ struct ExploreCityView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 
                 if viewModel.suggestions.isEmpty {
-                    
                     VStack {
-                        
-                        
                         Text("¡No hay sugerencias por ahora!")
-                               .font(Font.theme.body)
-                               .fontWeight(.semibold)
-                               .foregroundColor(Color.secondaryText)
-                               .multilineTextAlignment(.center)
+                            .font(Font.theme.body)
+                            .fontWeight(.semibold)
+                            .foregroundColor(Color.secondaryText)
+                            .multilineTextAlignment(.center)
                            
-                           Text("¡Vuelve más tarde cuando tengas un poco de tiempo libre!")
-                               .font(Font.theme.caption)
-                               .foregroundColor(Color.secondaryText.opacity(0.8))
-                               .multilineTextAlignment(.center)
-                          
-                       
+                        Text("¡Vuelve más tarde cuando tengas un poco de tiempo libre!")
+                            .font(Font.theme.caption)
+                            .foregroundColor(Color.secondaryText.opacity(0.8))
+                            .multilineTextAlignment(.center)
                     }
                     .padding(.top, -55)
                     .frame(height: 530)
                     
                 } else {
-                   
                     GeometryReader { geometry in
                         let cardWidth = geometry.size.width * 0.85
                         let peekAmount: CGFloat = 50
                         
                         ZStack {
-                            ForEach(Array(viewModel.suggestions.enumerated()), id: \.element.id) { index, suggestion in
+                            ForEach(Array(viewModel.suggestions.enumerated()), id: \.offset) { index, suggestion in
                                 let distance = CGFloat(index - currentIndex)
                                 let offset = distance * (cardWidth - peekAmount) + dragOffset
                                 let scale = getScale(for: index)
@@ -90,22 +85,17 @@ struct ExploreCityView: View {
                         .simultaneousGesture(
                             DragGesture(minimumDistance: 20)
                                 .onChanged { value in
-                                   
                                     if isDraggingHorizontally == nil {
                                         let horizontalAmount = abs(value.translation.width)
                                         let verticalAmount = abs(value.translation.height)
-                                        
-                                        
                                         isDraggingHorizontally = horizontalAmount > verticalAmount
                                     }
                                     
-                
                                     if isDraggingHorizontally == true {
                                         dragOffset = value.translation.width
                                     }
                                 }
                                 .onEnded { value in
-                                   
                                     if isDraggingHorizontally == true {
                                         let threshold: CGFloat = 50
                                         
@@ -119,7 +109,6 @@ struct ExploreCityView: View {
                                         }
                                     }
                                     
-                                   
                                     isDraggingHorizontally = nil
                                     dragOffset = 0
                                 }
@@ -129,7 +118,6 @@ struct ExploreCityView: View {
                     .frame(height: 530)
                     .clipped()
                     
-        
                     HStack(spacing: 12) {
                         ForEach(0..<viewModel.suggestions.count, id: \.self) { index in
                             Circle()
@@ -168,4 +156,11 @@ struct ExploreCityView: View {
             return 0.0
         }
     }
+}
+
+
+#Preview {
+    ExploreCityView(viewModel: HomeViewModel())
+        .environmentObject(UserDataManager())
+        .background(Color.black)
 }

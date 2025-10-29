@@ -123,24 +123,30 @@ class DENUEService {
             return [] // Or add default/fallback keywords if desired
         }
     }
-    
     private func transformToMapLocations(_ businesses: [DENUEBusiness]) -> [MapLocation] {
-        return businesses.compactMap { business in
-            guard let lat = Double(business.latitude), let lon = Double(business.longitude) else {
-                logger.warning("Skipping business '\(business.name)' due to invalid coordinates.")
+        return businesses.compactMap { business -> MapLocation? in
+            // Validar que latitude y longitude no estén vacíos
+            guard
+                !business.latitude.isEmpty,
+                !business.longitude.isEmpty,
+                let lat = Double(business.latitude),
+                let lon = Double(business.longitude)
+            else {
+                logger.warning("Saltando negocio '\(business.name)' por coordenadas inválidas: [\(business.latitude), \(business.longitude)]")
                 return nil
             }
-            
+
             let locationType = mapBusinessTypeToLocationType(business.businessCategory)
-            
+
             return MapLocation(
-                denueID: business.id, // Use the stable ID from the API
+                id: business.id,
+                denueID: business.id,
                 name: business.name.capitalized,
                 type: locationType,
                 coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon),
                 description: business.businessCategory,
-                imageName: MockData.randomMockImage(), // Placeholder
-                promotesWomenInSports: false, // This would require a separate data source
+                imageName: MockData.randomMockImage(),
+                promotesWomenInSports: false,
                 address: business.address,
                 phoneNumber: business.phoneNumber,
                 website: business.website
@@ -170,17 +176,8 @@ class DENUEService {
     }
 }
 
-// Add Hashable conformance to DENUEBusiness to allow for easy deduplication in a Set.
-extension DENUEBusiness: Hashable {
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
-
-    static func == (lhs: DENUEBusiness, rhs: DENUEBusiness) -> Bool {
-        return lhs.id == rhs.id
-    }
-}
-
+// ✅ ELIMINADA: Extensión redundante de Hashable
+// DENUEBusiness ya conforma a Hashable en su definición original
 
 extension Array {
     func chunks(ofCount size: Int) -> [[Element]] {

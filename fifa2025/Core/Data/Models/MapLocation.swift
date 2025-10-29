@@ -10,7 +10,7 @@ import CoreLocation
 import SwiftUI
 import MapKit
 
-enum LocationType: Int, CaseIterable, Identifiable {
+enum LocationType: Int, CaseIterable, Identifiable, Codable {
     case food = 0
     case shop = 1
     case cultural = 2
@@ -60,12 +60,13 @@ enum LocationType: Int, CaseIterable, Identifiable {
     }
 }
 
-struct MapLocation: Identifiable, Equatable {
-    let id: UUID
-    let denueID: String?
+struct MapLocation: Identifiable, Equatable, Codable {
+    let id: String
+    let denueID: String
     let name: String
     let type: LocationType
-    let coordinate: CLLocationCoordinate2D
+    let latitude: Double
+    let longitude: Double
     let description: String
     let imageName: String
     let promotesWomenInSports: Bool
@@ -74,12 +75,17 @@ struct MapLocation: Identifiable, Equatable {
     let phoneNumber: String?
     let website: String?
 
-    init(id: UUID = UUID(), denueID: String, name: String, type: LocationType, coordinate: CLLocationCoordinate2D, description: String, imageName: String, promotesWomenInSports: Bool, address: String? = nil, phoneNumber: String? = nil, website: String? = nil) {
+    var coordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
+
+    init(id: String, denueID: String, name: String, type: LocationType, coordinate: CLLocationCoordinate2D, description: String, imageName: String, promotesWomenInSports: Bool, address: String? = nil, phoneNumber: String? = nil, website: String? = nil) {
         self.id = id
         self.denueID = denueID
         self.name = name
         self.type = type
-        self.coordinate = coordinate
+        self.latitude = coordinate.latitude
+        self.longitude = coordinate.longitude
         self.description = description
         self.imageName = imageName
         self.promotesWomenInSports = promotesWomenInSports
@@ -88,7 +94,6 @@ struct MapLocation: Identifiable, Equatable {
         self.website = website
     }
     
-   
     static func == (lhs: MapLocation, rhs: MapLocation) -> Bool {
         return lhs.denueID == rhs.denueID
     }

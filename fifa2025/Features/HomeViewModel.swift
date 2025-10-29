@@ -5,6 +5,7 @@
 //  Created by Georgina on 07/10/25.
 //
 
+
 import Foundation
 import CoreLocation
 import Combine
@@ -13,18 +14,27 @@ import SwiftUI
 
 @MainActor
 class HomeViewModel: ObservableObject {
-    @Published var suggestions: [ItinerarySuggestion] = []
+    @Published var suggestions: [SmartItinerarySuggestion] = []
     @Published var calendarAuthorizationStatus: EKAuthorizationStatus
     @Published var showScheduleAlert = false
     @Published var scheduleAlertMessage = ""
-    @StateObject private var userDataManager = UserDataManager()
+    @Published var isGeneratingCSV = false
+    @Published var showCSVAlert = false
+    @Published var csvErrorMessage: String?
+    @Published var csvURL: URL?
+    @Published var currentCSVProgress: String = ""
     
+    @StateObject private var userDataManager = UserDataManager()
     private let calendarManager = CalendarManager()
-    private let locationManager = LocationManager()
+    
+    // ✅ CRÍTICO: Ahora como @ObservedObject para detectar cambios
+    @ObservedObject private var locationService = SimpleLocationService(preset: .cdmxCentro)
+    
+    private let placesManager = PlacesManager()
+    private let inegiManager = INEGICSVManager()
     private var cancellables = Set<AnyCancellable>()
     
-    // MARK: - Debugging Flag
-    private let useMockLocation = true
+    private var lastGoogleCSVPath: URL?
     
     init() {
         self.calendarAuthorizationStatus = calendarManager.authorizationStatus
@@ -32,21 +42,101 @@ class HomeViewModel: ObservableObject {
         calendarManager.$authorizationStatus
             .receive(on: DispatchQueue.main)
             .assign(to: &$calendarAuthorizationStatus)
-
-        if useMockLocation {
-            locationManager.startUpdatingLocationWithMock()
-        } else {
-            locationManager.startUpdatesIfNeeded()
-        }
+        
+        print("📍 HomeViewModel: Usando ubicación fija de CDMX")
     }
     
     func loadInitialData() async {
-        Publishers.CombineLatest(calendarManager.$events, locationManager.$location.compactMap { $0 })
-            .debounce(for: .seconds(1), scheduler: RunLoop.main)
-            .sink { [weak self] (events, userLocation) in
-                self?.regenerateSuggestions(events: events, userLocation: userLocation)
+        // ✅ AHORA SÍ REACTIVO: Usa $location en lugar de Just()
+        Publishers.CombineLatest(
+            calendarManager.$events,
+            locationService.$location  // 👈 CAMBIO CRÍTICO
+        )
+        .debounce(for: .seconds(0.5), scheduler: RunLoop.main)
+        .sink { [weak self] (events, userLocation) in
+            print("🔄 Regenerando - Ubicación: (\(userLocation.coordinate.latitude), \(userLocation.coordinate.longitude))")
+            self?.regenerateSuggestions(events: events, userLocation: userLocation)
+        }
+        .store(in: &cancellables)
+        
+        // Trigger inicial
+        calendarManager.fetchEvents()
+    }
+    
+    enum CSVType {
+        case googleOnly
+        case inegiOnly
+        case merged
+    }
+    
+    enum CSVCoverageOption {
+        case standard
+        case touristZones
+        case fullCoverage
+    }
+
+    func generateCSV(type: CSVType, coverage: CSVCoverageOption = .touristZones) {
+        guard !isGeneratingCSV else { return }
+        
+        isGeneratingCSV = true
+        csvErrorMessage = nil
+        currentCSVProgress = "Iniciando..."
+        
+        Task {
+            do {
+                var url: URL?
+                
+                switch type {
+                case .googleOnly:
+                    currentCSVProgress = "📍 Generando CSV de Google Places..."
+                    url = try await placesManager.generateCSVTouristZones()
+                    lastGoogleCSVPath = url
+                    
+                case .inegiOnly:
+                    currentCSVProgress = "🏛️ Generando CSV de INEGI..."
+                    url = try await inegiManager.generateINEGICSV()
+                    
+                case .merged:
+                    currentCSVProgress = "🔄 Paso 1/2: Generando CSV de Google Places..."
+                    let googleURL = try await placesManager.generateCSVTouristZones()
+                    lastGoogleCSVPath = googleURL
+                    
+                    currentCSVProgress = "🔄 Paso 2/2: Fusionando con datos de INEGI..."
+                    url = try await inegiManager.generateMergedCSV(googleCSVPath: googleURL)
+                }
+                
+                await MainActor.run {
+                    if let url = url {
+                        self.csvURL = url
+                        self.csvErrorMessage = nil
+                        
+                        switch type {
+                        case .googleOnly:
+                            self.scheduleAlertMessage = "✅ CSV de Google Places generado exitosamente"
+                        case .inegiOnly:
+                            self.scheduleAlertMessage = "✅ CSV de INEGI generado exitosamente"
+                        case .merged:
+                            self.scheduleAlertMessage = "✅ CSV combinado (Google + INEGI) generado exitosamente"
+                        }
+                    }
+                    self.showCSVAlert = true
+                    self.isGeneratingCSV = false
+                    self.currentCSVProgress = ""
+                }
+            } catch {
+                print("❌ Error generando CSV: \(error)")
+                await MainActor.run {
+                    self.csvErrorMessage = "Error al generar el CSV: \(error.localizedDescription)"
+                    self.showCSVAlert = true
+                    self.isGeneratingCSV = false
+                    self.currentCSVProgress = ""
+                }
             }
-            .store(in: &cancellables)
+        }
+    }
+    
+    func generateCSVManually(option: CSVCoverageOption = .touristZones) {
+        generateCSV(type: .googleOnly, coverage: option)
     }
     
     func checkAndRequestPermissionsIfNeeded() {
@@ -61,13 +151,13 @@ class HomeViewModel: ObservableObject {
         calendarManager.requestAccess()
     }
     
-    func scheduleSuggestion(_ suggestion: ItinerarySuggestion) {
-        calendarManager.addEvent(suggestion: suggestion) { [weak self] success in
+    func scheduleSuggestion(_ suggestion: SmartItinerarySuggestion) {
+        calendarManager.addSmartItinerary(suggestion) { [weak self] success in
             DispatchQueue.main.async {
                 if success {
-                    self?.scheduleAlertMessage = "\(suggestion.location.name) has been added to your calendar!"
+                    self?.scheduleAlertMessage = "¡Itinerario agregado a tu calendario!"
                 } else {
-                    self?.scheduleAlertMessage = "Failed to add event. Please check your calendar permissions in Settings."
+                    self?.scheduleAlertMessage = "No se pudo agregar el evento. Verifica los permisos del calendario."
                 }
                 self?.showScheduleAlert = true
             }
@@ -75,16 +165,39 @@ class HomeViewModel: ObservableObject {
     }
     
     private func regenerateSuggestions(events: [Event], userLocation: CLLocation) {
-            let now = Date()
-            let endOfDay = Calendar.current.startOfDay(for: now).addingTimeInterval(24 * 60 * 60 - 1)
-            
-            let freeSlots = SuggestionEngine.findFreeTimeSlots(events: events, from: now, to: endOfDay)
-            
-            self.suggestions = SuggestionEngine.generateSuggestions(
-                for: freeSlots,
-                from: userLocation,
-                for: userDataManager.user,
-                allLocations: MockData.locations
-            )
+        let now = Date()
+        let endOfDay = Calendar.current.startOfDay(for: now).addingTimeInterval(24 * 60 * 60 - 1)
+        
+        let freeSlots = SuggestionEngine.findFreeTimeSlots(events: events, from: now, to: endOfDay)
+        
+        let allLocations = SuggestionEngine.loadAllLocations()
+        
+        print("📍 Regenerando desde: (\(userLocation.coordinate.latitude), \(userLocation.coordinate.longitude))")
+        print("📊 Locations: \(allLocations.count), Free slots: \(freeSlots.count)")
+        
+        self.suggestions = SuggestionEngine.generateSmartSuggestions(
+            for: freeSlots,
+            from: userLocation,
+            for: userDataManager.user,
+            allLocations: allLocations
+        )
+        
+        print("✅ \(self.suggestions.count) sugerencias generadas")
+    }
+    
+    func shareCSV() {
+        guard let url = csvURL else { return }
+        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootVC = windowScene.windows.first?.rootViewController {
+            rootVC.present(activityVC, animated: true)
         }
+    }
+    
+    // ✅ SIMPLIFICADO: Solo cambia ubicación, el Publisher hace el resto
+    func changeTestLocation(to preset: SimpleLocationService.PresetLocation) {
+        print("🔄 Cambiando ubicación a: \(preset.name)")
+        locationService.setLocation(preset)
+        // El Publisher detecta el cambio automáticamente y regenera
+    }
 }

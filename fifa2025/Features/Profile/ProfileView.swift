@@ -6,9 +6,19 @@
 //
 
 import SwiftUI
+import CoreLocation
 
 struct ProfileView: View {
-    @EnvironmentObject var userData: UserDataManager  
+    @EnvironmentObject var userData: UserDataManager
+    
+    // MARK: - Datos Mockeados solo para visitas
+    private var displayVisits: [Visit] {
+        // Si no hay visitas reales, mostrar datos mockeados
+        if userData.user.visits.isEmpty {
+            return getMockedVisits()
+        }
+        return userData.user.recentVisits(limit: 2)
+    }
     
     var body: some View {
         NavigationView {
@@ -23,7 +33,7 @@ struct ProfileView: View {
                     
                     CompletedChallengesView(challenges: userData.user.completedChallenges)
                     
-                    RecentActivityView(visits: userData.user.recentVisits(limit: 2))
+                    RecentActivityView(visits: displayVisits)
                 }
                 .padding()
             }
@@ -32,6 +42,55 @@ struct ProfileView: View {
                 print("🔍 Profile: \(userData.user.points) pts")
             }
         }
+    }
+    
+    // MARK: - Función para datos mockeados de visitas
+    private func getMockedVisits() -> [Visit] {
+        let mockLocations = [
+            MapLocation(
+                id: UUID().uuidString,
+                denueID: "mock001",
+                name: "Tacos El Paisa",
+                type: .food,
+                coordinate: CLLocationCoordinate2D(latitude: 19.0436, longitude: -98.1986),
+                description: "Auténticos tacos al pastor",
+                imageName: "taco_place",
+                promotesWomenInSports: false,
+                address: "Calle 5 de Mayo 123",
+                phoneNumber: "222-123-4567",
+                website: nil
+            ),
+            MapLocation(
+                id: UUID().uuidString,
+                denueID: "mock002",
+                name: "Museo Amparo",
+                type: .cultural,
+                coordinate: CLLocationCoordinate2D(latitude: 19.0414, longitude: -98.1973),
+                description: "Arte prehispánico y contemporáneo",
+                imageName: "museum",
+                promotesWomenInSports: false,
+                address: "Calle 2 Sur 708",
+                phoneNumber: "222-229-3850",
+                website: "www.museoamparo.com"
+            )
+        ]
+        
+        return [
+            Visit(
+                id: UUID(),
+                location: mockLocations[0],
+                date: Date().addingTimeInterval(-86400 * 2), // Hace 2 días
+                rating: 5,
+                comment: "¡Los mejores tacos de la ciudad! Totalmente recomendado 🌮"
+            ),
+            Visit(
+                id: UUID(),
+                location: mockLocations[1],
+                date: Date().addingTimeInterval(-86400 * 5), // Hace 5 días
+                rating: 4,
+                comment: "Increíble colección de arte. Vale la pena visitarlo"
+            )
+        ]
     }
 }
 

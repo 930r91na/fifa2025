@@ -41,7 +41,8 @@ struct ContentView: View {
                 }
                 .environmentObject(userDataManager)
             
-            MapView()
+         
+            ItineraryMapViewDirect()
                 .tabItem {
                     Label("Mapa", systemImage: "map.fill")
                 }

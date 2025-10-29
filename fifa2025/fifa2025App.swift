@@ -12,7 +12,9 @@ import UniformTypeIdentifiers
 struct fifa2025App: App {
     
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
-    @StateObject private var userDataManager = UserDataManager()
+    
+ 
+    private let userDataManager = UserDataManager.shared
     @StateObject private var communityVM = CommunityViewModel()
     
     @State private var receivedCard: WorldCupCard?
@@ -50,7 +52,6 @@ struct fifa2025App: App {
             .onAppear {
                 communityVM.connectUserData(userDataManager)
                 
-           
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                     withAnimation(.easeOut(duration: 0.5)) {
                         showSplash = false

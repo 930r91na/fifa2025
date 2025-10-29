@@ -839,23 +839,11 @@ class SuggestionEngine {
         
         logger.debug("Building full day itinerary from \(startHour):00 to 22:00")
         
-        // ✅ USAR SCORING MEJORADO
+        // Scoring y ordenamiento
         var validPlaces = recommendedDenueIDs.compactMap { denueID -> (id: String, data: PlaceData, score: Double)? in
             guard let data = denueCache[denueID] else { return nil }
-            
-            guard isAllowedCategory(data.business_category,
-                                   website: data.website,
-                                   name: data.name) else {
-                return nil
-            }
-            
-            let score = calculatePlaceScore(
-                placeData: data,
-                userLocation: userLocation,
-                userInterests: userInterests,
-                userArchetype: userArchetype
-            )
-            
+            guard isAllowedCategory(data.business_category, website: data.website, name: data.name) else { return nil }
+            let score = calculatePlaceScore(placeData: data, userLocation: userLocation, userInterests: userInterests, userArchetype: userArchetype)
             return (denueID, data, score)
         }
         
@@ -870,16 +858,33 @@ class SuggestionEngine {
             logger.info("🎯 Building full day for: \(archetype.displayName)")
         }
         
-        logger.debug("Top 10 places for full day (with scores):")
-        for (index, place) in validPlaces.prefix(10).enumerated() {
-            let archetypeBonus = getArchetypeBonus(category: place.data.business_category, archetype: userArchetype)
-            logger.debug("  \(index + 1). \(place.data.name)")
-            logger.debug("      Category: \(place.data.business_category ?? "N/A")")
-            logger.debug("      Total Score: \(Int(place.score)) (Archetype Bonus: \(Int(archetypeBonus * 1.5)))")
-        }
-        
+        // Separar lugares de comida vs atracciones
         var foodPlaces = validPlaces.filter { isFood($0.data.business_category) }
         var attractionPlaces = validPlaces.filter { !isFood($0.data.business_category) }
+        
+        // 🆕 ASEGURAR que tenemos suficientes lugares de comida
+        if foodPlaces.count < 3 {
+            logger.warning("⚠️ Only \(foodPlaces.count) food places! Need at least 3 for full day")
+            // Buscar más lugares de comida cercanos
+            let additionalFood = denueCache.values
+                .filter { place in
+                    isFood(place.business_category) &&
+                    isAllowedCategory(place.business_category, website: place.website, name: place.name)
+                }
+                .compactMap { place -> (id: String, data: PlaceData, score: Double)? in
+                    guard let lat = Double(place.lat), let lng = Double(place.lng) else { return nil }
+                    let loc = CLLocation(latitude: lat, longitude: lng)
+                    let dist = userLocation.distance(from: loc) / 1000.0
+                    guard dist <= 15.0 else { return nil }  // Radio ampliado
+                    let score = calculatePlaceScore(placeData: place, userLocation: userLocation, userInterests: userInterests, userArchetype: userArchetype)
+                    return (place.denue_id ?? place.place_id, place, score)
+                }
+                .sorted { $0.score > $1.score }
+                .prefix(5)
+            
+            foodPlaces.append(contentsOf: additionalFood)
+            logger.info("✅ Added \(additionalFood.count) more food places, total: \(foodPlaces.count)")
+        }
         
         var stops: [ItineraryStop] = []
         var currentTime = startTime
@@ -887,50 +892,58 @@ class SuggestionEngine {
         var mealStops: [MealType: ItineraryStop] = [:]
         
         let mealSchedule = planMealsForDay(startHour: startHour, endHour: 22)
+        logger.debug("Planned \(mealSchedule.count) meals: \(mealSchedule.map { $0.type.rawValue })")
         
-        logger.debug("Planned \(mealSchedule.count) meals")
-        
-        while currentTime < endTime {
-            let currentHourComponent = calendar.component(.hour, from: currentTime)
+        // 🆕 ESTRATEGIA: Primero agregar TODAS las comidas planeadas
+        for meal in mealSchedule {
+            let mealTime = calendar.date(bySetting: .hour, value: meal.hour, of: currentTime)!
             
-            if let nextMeal = mealSchedule.first(where: { meal in
-                meal.hour == currentHourComponent && mealStops[meal.type] == nil
-            }) {
-                logger.debug("Adding \(nextMeal.type.rawValue) at hour \(nextMeal.hour)")
-                
-                if let foodPlace = findNearestPlace(from: currentLocation, candidates: foodPlaces, maxDistance: 10.0) {
-                    let mealDuration: TimeInterval = nextMeal.type == .snack ? 20*60 : 45*60
-                    
-                    let stop = createStop(
-                        placeData: foodPlace.data,
-                        arrivalTime: currentTime,
-                        duration: mealDuration,
-                        previousLocation: currentLocation,
-                        mealType: nextMeal.type
-                    )
-                    
-                    stops.append(stop)
-                    mealStops[nextMeal.type] = stop
-                    currentTime = stop.departureTime.addingTimeInterval(15*60)
-                    currentLocation = CLLocation(
-                        latitude: Double(foodPlace.data.lat) ?? 0,
-                        longitude: Double(foodPlace.data.lng) ?? 0
-                    )
-                    foodPlaces.removeAll { $0.id == foodPlace.id }
-                    continue
-                }
+            guard mealTime >= currentTime && mealTime < endTime else {
+                logger.debug("⏩ Skipping \(meal.type.rawValue) - fuera de rango")
+                continue
             }
             
-            let timeUntilEnd = endTime.timeIntervalSince(currentTime)
-            guard timeUntilEnd >= 30*60 else { break }
-            
-            if !attractionPlaces.isEmpty {
-                if let nextPlace = findNearestPlace(
-                    from: currentLocation,
-                    candidates: attractionPlaces,
-                    maxDistance: 8.0
-                ) {
-                    let activityDuration: TimeInterval = min(90*60, timeUntilEnd - 15*60)
+            if let foodPlace = findNearestPlace(from: currentLocation, candidates: foodPlaces, maxDistance: 12.0) {
+                let mealDuration: TimeInterval = meal.type == .snack ? 30*60 : 45*60
+                
+                let stop = createStop(
+                    placeData: foodPlace.data,
+                    arrivalTime: mealTime,
+                    duration: mealDuration,
+                    previousLocation: currentLocation,
+                    mealType: meal.type
+                )
+                
+                stops.append(stop)
+                mealStops[meal.type] = stop
+                currentTime = stop.departureTime.addingTimeInterval(15*60)
+                currentLocation = CLLocation(
+                    latitude: Double(foodPlace.data.lat) ?? 0,
+                    longitude: Double(foodPlace.data.lng) ?? 0
+                )
+                foodPlaces.removeAll { $0.id == foodPlace.id }
+                
+                logger.info("✅ Added \(meal.type.rawValue) at \(meal.hour):00")
+            } else {
+                logger.warning("⚠️ Could not find food place for \(meal.type.rawValue)")
+            }
+        }
+        
+        // Luego llenar con atracciones entre comidas
+        let sortedStops = stops.sorted { $0.arrivalTime < $1.arrivalTime }
+        var finalStops: [ItineraryStop] = []
+        
+        currentTime = startTime
+        currentLocation = userLocation
+        
+        for (index, mealStop) in sortedStops.enumerated() {
+            // Agregar atracciones antes de esta comida
+            while currentTime < mealStop.arrivalTime.addingTimeInterval(-45*60) {
+                let timeUntilMeal = mealStop.arrivalTime.timeIntervalSince(currentTime)
+                guard timeUntilMeal >= 60*60 else { break }  // Al menos 1 hora
+                
+                if let nextPlace = findNearestPlace(from: currentLocation, candidates: attractionPlaces, maxDistance: 8.0) {
+                    let activityDuration: TimeInterval = min(90*60, timeUntilMeal - 30*60)
                     
                     let stop = createStop(
                         placeData: nextPlace.data,
@@ -940,9 +953,7 @@ class SuggestionEngine {
                         mealType: nil
                     )
                     
-                    guard stop.departureTime <= endTime else { break }
-                    
-                    stops.append(stop)
+                    finalStops.append(stop)
                     currentTime = stop.departureTime.addingTimeInterval(15*60)
                     currentLocation = CLLocation(
                         latitude: Double(nextPlace.data.lat) ?? 0,
@@ -952,54 +963,106 @@ class SuggestionEngine {
                 } else {
                     break
                 }
+            }
+            
+            // Agregar la comida
+            finalStops.append(mealStop)
+            currentTime = mealStop.departureTime.addingTimeInterval(15*60)
+            currentLocation = CLLocation(
+                latitude: Double(mealStop.placeData.lat) ?? 0,
+                longitude: Double(mealStop.placeData.lng) ?? 0
+            )
+        }
+        
+        // Agregar más atracciones después de la última comida
+        while currentTime < endTime && !attractionPlaces.isEmpty {
+            let timeUntilEnd = endTime.timeIntervalSince(currentTime)
+            guard timeUntilEnd >= 45*60 else { break }
+            
+            if let nextPlace = findNearestPlace(from: currentLocation, candidates: attractionPlaces, maxDistance: 8.0) {
+                let activityDuration: TimeInterval = min(90*60, timeUntilEnd - 15*60)
+                
+                let stop = createStop(
+                    placeData: nextPlace.data,
+                    arrivalTime: currentTime,
+                    duration: activityDuration,
+                    previousLocation: currentLocation,
+                    mealType: nil
+                )
+                
+                guard stop.departureTime <= endTime else { break }
+                
+                finalStops.append(stop)
+                currentTime = stop.departureTime.addingTimeInterval(15*60)
+                currentLocation = CLLocation(
+                    latitude: Double(nextPlace.data.lat) ?? 0,
+                    longitude: Double(nextPlace.data.lng) ?? 0
+                )
+                attractionPlaces.removeAll { $0.id == nextPlace.id }
             } else {
                 break
             }
         }
         
-        guard !stops.isEmpty else {
+        guard !finalStops.isEmpty else {
             logger.warning("No stops created for full day")
             return nil
         }
         
-        stops.sort { $0.arrivalTime < $1.arrivalTime }
+        finalStops.sort { $0.arrivalTime < $1.arrivalTime }
         
-        let totalDistance = calculateTotalDistance(stops: stops)
-        let actualDuration = stops.last!.departureTime.timeIntervalSince(stops.first!.arrivalTime)
+        let totalDistance = calculateTotalDistance(stops: finalStops)
+        let actualDuration = finalStops.last!.departureTime.timeIntervalSince(finalStops.first!.arrivalTime)
         
-        logger.info("Full day itinerary: \(stops.count) stops, \(String(format: "%.1f", totalDistance))km, \(Int(actualDuration/3600))h")
+        let mealCount = finalStops.filter { $0.mealType != nil }.count
+        let attractionCount = finalStops.filter { $0.mealType == nil }.count
+        
+        logger.info("Full day itinerary: \(finalStops.count) stops (\(mealCount) meals, \(attractionCount) attractions), \(String(format: "%.1f", totalDistance))km, \(Int(actualDuration/3600))h")
+        logger.info("Meals included: \(mealStops.keys.map { $0.rawValue }.joined(separator: ", "))")
         
         return SmartItinerarySuggestion(
-            places: stops,
+            places: finalStops,
             totalDuration: actualDuration,
             totalDistance: totalDistance,
             mealStops: mealStops,
             itineraryType: .extended
         )
     }
-    
     private static func planMealsForDay(startHour: Int, endHour: Int) -> [(hour: Int, type: MealType)] {
         var meals: [(hour: Int, type: MealType)] = []
         
+        // Desayuno (7-10)
         if startHour <= 10 {
             meals.append((max(startHour, 8), .breakfast))
         }
         
-        if startHour <= 14 && endHour >= 13 {
-            meals.append((14, .lunch))
+        // Comida (13-15) - PRIORIDAD ALTA
+        if startHour <= 15 && endHour >= 13 {
+            let lunchHour = max(startHour, 13)
+            if lunchHour <= 15 {
+                meals.append((lunchHour, .lunch))
+            }
         }
         
-        if startHour <= 17 && endHour >= 17 {
-            meals.append((17, .snack))
+        // Snack (16-18) - NUEVO: Más flexible
+        if endHour >= 17 {
+            let snackHour = max(startHour + 1, 17)  // Al menos 1 hora después de inicio
+            if snackHour <= 18 && snackHour < endHour {
+                meals.append((snackHour, .snack))
+            }
         }
         
-        if startHour <= 20 && endHour >= 19 {
-            meals.append((20, .dinner))
+        // Cena (19-21) - NUEVO: Más flexible
+        if endHour >= 19 {
+            let dinnerHour = max(startHour + 2, 20)  // Al menos 2 horas después de inicio
+            if dinnerHour <= 21 && dinnerHour < endHour {
+                meals.append((dinnerHour, .dinner))
+            }
         }
         
+        print("📅 Meals planned: \(meals.map { "\($0.type.rawValue) @ \($0.hour):00" }.joined(separator: ", "))")
         return meals
     }
-
     // MARK: - Build Smart Itinerary
     private static func buildSmartItinerary(
         startTime: Date,

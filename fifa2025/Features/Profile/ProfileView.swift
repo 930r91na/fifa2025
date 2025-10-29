@@ -5,15 +5,19 @@
 //  Created by Georgina on 11/10/25.
 //
 
+
+
 import SwiftUI
 import CoreLocation
 
 struct ProfileView: View {
     @EnvironmentObject var userData: UserDataManager
     
-    // MARK: - Datos Mockeados solo para visitas
+    // ✅ NO necesita HomeViewModel, solo el singleton
+    private let locationService = SharedLocationService.shared
+    @State private var currentLocationName: String = "Centro Histórico"
+    
     private var displayVisits: [Visit] {
-        // Si no hay visitas reales, mostrar datos mockeados
         if userData.user.visits.isEmpty {
             return getMockedVisits()
         }
@@ -25,6 +29,12 @@ struct ProfileView: View {
             ScrollView {
                 VStack(spacing: 5) {
                     ProfileHeaderView(user: userData.user)
+                    
+                    // ✅ Selector de ubicación en Profile
+                    ProfileLocationPickerSection(
+                        locationService: locationService,
+                        currentLocationName: $currentLocationName
+                    )
                     
                     GamificationStatsView(
                         points: userData.user.points,
@@ -39,12 +49,16 @@ struct ProfileView: View {
             }
             .background(Color("BackgroudColor"))
             .onAppear {
-                print("🔍 Profile: \(userData.user.points) pts")
+                currentLocationName = locationService.currentPreset.name
+                print("🔍 Profile: \(userData.user.points) pts, Ubicación: \(currentLocationName)")
+            }
+            // ✅ Escuchar cambios de ubicación
+            .onReceive(locationService.$currentPreset) { newPreset in
+                currentLocationName = newPreset.name
             }
         }
     }
     
-    // MARK: - Función para datos mockeados de visitas
     private func getMockedVisits() -> [Visit] {
         let mockLocations = [
             MapLocation(
@@ -79,14 +93,14 @@ struct ProfileView: View {
             Visit(
                 id: UUID(),
                 location: mockLocations[0],
-                date: Date().addingTimeInterval(-86400 * 2), // Hace 2 días
+                date: Date().addingTimeInterval(-86400 * 2),
                 rating: 5,
                 comment: "¡Los mejores tacos de la ciudad! Totalmente recomendado 🌮"
             ),
             Visit(
                 id: UUID(),
                 location: mockLocations[1],
-                date: Date().addingTimeInterval(-86400 * 5), // Hace 5 días
+                date: Date().addingTimeInterval(-86400 * 5),
                 rating: 4,
                 comment: "Increíble colección de arte. Vale la pena visitarlo"
             )
@@ -94,7 +108,160 @@ struct ProfileView: View {
     }
 }
 
-// MARK: - Subviews (TODO IGUAL)
+// MARK: - 🆕 Location Picker para Profile
+struct ProfileLocationPickerSection: View {
+    let locationService: SharedLocationService
+    @Binding var currentLocationName: String
+    @State private var selectedCategory: SharedLocationService.LocationCategory = .neighborhood
+    @State private var showLocationInfo = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header con ubicación actual
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("📍 Ubicación de Prueba")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color.primaryText)
+                    
+                    Text("Actual: \(currentLocationName)")
+                        .font(.system(size: 12))
+                        .foregroundColor(Color.secondaryText)
+                }
+                
+                Spacer()
+                
+                // Info Button
+                Button {
+                    showLocationInfo.toggle()
+                } label: {
+                    Image(systemName: "info.circle")
+                        .foregroundColor(.blue)
+                }
+                
+                // Category Picker
+                Menu {
+                    ForEach([
+                        SharedLocationService.LocationCategory.neighborhood,
+                        .commercial,
+                        .stadium,
+                        .museum,
+                        .park
+                    ], id: \.self) { category in
+                        Button(action: { selectedCategory = category }) {
+                            Text(category.displayName)
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(selectedCategory.displayName)
+                            .font(.system(size: 12, weight: .semibold))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 10))
+                    }
+                    .foregroundColor(.fifaCompPurple)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.fifaCompPurple.opacity(0.2))
+                    .cornerRadius(8)
+                }
+            }
+            
+            // Selector de ubicaciones
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(SharedLocationService.locations(for: selectedCategory), id: \.self) { location in
+                        ProfileLocationButton(
+                            location: location,
+                            isSelected: location.name == currentLocationName,
+                            action: {
+                                print("🔄 Profile: Cambiando a \(location.name)")
+                                locationService.setLocation(location)
+                                currentLocationName = location.name
+                            }
+                        )
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            
+            // Info adicional
+            if showLocationInfo {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("ℹ️ Modo de Prueba")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.blue)
+                    
+                    Text("Los cambios de ubicación se reflejan automáticamente en:")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Image(systemName: "house.fill")
+                                .foregroundColor(.orange)
+                            Text("HomeView - Sugerencias de lugares")
+                                .font(.system(size: 10))
+                        }
+                        HStack {
+                            Image(systemName: "map.fill")
+                                .foregroundColor(.blue)
+                            Text("MapView - Itinerario en mapa")
+                                .font(.system(size: 10))
+                        }
+                    }
+                    .foregroundColor(.secondary)
+                }
+                .padding(12)
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(10)
+                .transition(.opacity)
+            }
+        }
+        .padding()
+        .background(Color.secondaryBackground.opacity(0.5))
+        .cornerRadius(16)
+    }
+}
+
+// MARK: - Botón de Ubicación para Profile
+struct ProfileLocationButton: View {
+    let location: SharedLocationService.PresetLocation
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                Text(location.emoji)
+                    .font(.system(size: 28))
+                
+                Text(location.name)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .frame(height: 28)
+            }
+            .frame(width: 85, height: 75)
+            .background(
+                isSelected
+                    ? Color.fifaCompPurple
+                    : Color.secondaryBackground.opacity(0.8)
+            )
+            .cornerRadius(12)
+            .scaleEffect(isSelected ? 1.05 : 1.0)
+            .shadow(
+                color: isSelected ? Color.fifaCompPurple.opacity(0.5) : .clear,
+                radius: 10
+            )
+            .animation(.spring(response: 0.3), value: isSelected)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Subviews Originales (sin cambios)
 struct ProfileHeaderView: View {
     let user: User
     
@@ -105,12 +272,12 @@ struct ProfileHeaderView: View {
                     .font(.title.weight(.heavy))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.bottom,10)
+                    .padding(.bottom, 10)
                 
                 Text("Perfil")
                     .font(Font.theme.largeTitle)
                     .foregroundColor(Color.primaryText)
-                    .padding(.top,1)
+                    .padding(.top, 1)
                     .padding(.leading, 5)
                 
                 HStack(alignment: .center) {
@@ -288,5 +455,5 @@ struct ChallengeRow: View {
 
 #Preview {
     ProfileView()
-        .environmentObject(UserDataManager())
+        .environmentObject(UserDataManager.shared)  // ✅ Usar .shared
 }

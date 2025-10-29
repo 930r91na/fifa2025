@@ -161,6 +161,6 @@ struct ExploreCityView: View {
 
 #Preview {
     ExploreCityView(viewModel: HomeViewModel())
-        .environmentObject(UserDataManager())
+        .environmentObject(UserDataManager.shared)
         .background(Color.black)
 }

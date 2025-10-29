@@ -4,13 +4,14 @@
 //
 //  Created by Georgina on 02/10/25.
 
+
 import SwiftUI
 internal import EventKit
 // Al final del archivo, agrega:
 
 struct LocationPickerSection: View {
     @ObservedObject var viewModel: HomeViewModel
-    @State private var selectedCategory: SimpleLocationService.LocationCategory = .neighborhood
+    @State private var selectedCategory: SharedLocationService.LocationCategory = .neighborhood
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -24,7 +25,7 @@ struct LocationPickerSection: View {
                 // Category Picker
                 Menu {
                     ForEach([
-                        SimpleLocationService.LocationCategory.neighborhood,
+                        SharedLocationService.LocationCategory.neighborhood,
                         .commercial,
                         .stadium,
                         .museum,
@@ -51,7 +52,7 @@ struct LocationPickerSection: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(SimpleLocationService.locations(for: selectedCategory), id: \.self) { location in
+                    ForEach(SharedLocationService.locations(for: selectedCategory), id: \.self) { location in
                         LocationTestButton(
                             location: location,
                             viewModel: viewModel
@@ -72,7 +73,7 @@ struct LocationPickerSection: View {
 }
 
 struct LocationTestButton: View {
-    let location: SimpleLocationService.PresetLocation
+    let location: SharedLocationService.PresetLocation
     @ObservedObject var viewModel: HomeViewModel
     
     @State private var isPressed = false
@@ -554,5 +555,5 @@ struct DailyChallengeView: View {
 
 #Preview {
     HomeView(communityVM: CommunityViewModel())
-        .environmentObject(UserDataManager())
+        .environmentObject(UserDataManager.shared)  // ✅ Usar .shared
 }

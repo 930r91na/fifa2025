@@ -5,7 +5,6 @@
 //  Created by Georgina on 07/10/25.
 //
 
-
 import Foundation
 import CoreLocation
 import Combine
@@ -24,11 +23,10 @@ class HomeViewModel: ObservableObject {
     @Published var csvURL: URL?
     @Published var currentCSVProgress: String = ""
     
-    @StateObject private var userDataManager = UserDataManager()
+    // ✅ USAR SINGLETON - NO crear instancias nuevas
+    private let userDataManager = UserDataManager.shared
     private let calendarManager = CalendarManager()
-    
-    // ✅ CRÍTICO: Ahora como @ObservedObject para detectar cambios
-    @ObservedObject private var locationService = SimpleLocationService(preset: .cdmxCentro)
+    private let locationService = SharedLocationService.shared
     
     private let placesManager = PlacesManager()
     private let inegiManager = INEGICSVManager()
@@ -43,26 +41,26 @@ class HomeViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .assign(to: &$calendarAuthorizationStatus)
         
-        print("📍 HomeViewModel: Usando ubicación fija de CDMX")
+        print("📍 HomeViewModel: Usando SharedLocationService.shared")
     }
     
     func loadInitialData() async {
-        // ✅ AHORA SÍ REACTIVO: Usa $location en lugar de Just()
+        // ✅ Escuchar cambios de ubicación del singleton
         Publishers.CombineLatest(
             calendarManager.$events,
-            locationService.$location  // 👈 CAMBIO CRÍTICO
+            locationService.$location
         )
         .debounce(for: .seconds(0.5), scheduler: RunLoop.main)
         .sink { [weak self] (events, userLocation) in
-            print("🔄 Regenerando - Ubicación: (\(userLocation.coordinate.latitude), \(userLocation.coordinate.longitude))")
+            print("🔄 HomeView regenerando - Ubicación: (\(userLocation.coordinate.latitude), \(userLocation.coordinate.longitude))")
             self?.regenerateSuggestions(events: events, userLocation: userLocation)
         }
         .store(in: &cancellables)
         
-        // Trigger inicial
         calendarManager.fetchEvents()
     }
     
+    // MARK: - CSV Generation (sin cambios)
     enum CSVType {
         case googleOnly
         case inegiOnly
@@ -194,10 +192,13 @@ class HomeViewModel: ObservableObject {
         }
     }
     
-    // ✅ SIMPLIFICADO: Solo cambia ubicación, el Publisher hace el resto
-    func changeTestLocation(to preset: SimpleLocationService.PresetLocation) {
-        print("🔄 Cambiando ubicación a: \(preset.name)")
+    // ✅ SIMPLIFICADO: Cambia ubicación en el singleton
+    func changeTestLocation(to preset: SharedLocationService.PresetLocation) {
+        print("🔄 HomeView: Cambiando ubicación global a: \(preset.name)")
         locationService.setLocation(preset)
-        // El Publisher detecta el cambio automáticamente y regenera
+        // El cambio se propaga automáticamente a:
+        // - HomeView (sugerencias)
+        // - ItineraryMapViewDirect (mapa)
+        // - ProfileView (selector)
     }
 }

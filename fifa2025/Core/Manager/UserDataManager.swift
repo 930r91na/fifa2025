@@ -5,8 +5,6 @@
 //  Created by Georgina on 12/10/25.
 //
 
-
-
 import Foundation
 import Combine
 import UIKit
@@ -25,25 +23,28 @@ struct SavedChallengePost: Codable {
 @MainActor
 class UserDataManager: ObservableObject {
     
+    // ⭐ SINGLETON para compartir en toda la app
+    static let shared = UserDataManager()
+    
     @Published var user: User {
         didSet {
-            saveUser() // 🆕 Guardar usuario completo cuando cambie
+            saveUser() // Guardar usuario completo cuando cambie
         }
     }
     
     // Keys para UserDefaults
-    private let userKey = "savedUser" // 🆕 NUEVO: Guardar usuario completo
+    private let userKey = "savedUser"
     private let pointsKey = "userPoints"
     private let streakKey = "userStreak"
     private let teamKey = "userTeam"
-    private let archetypeKey = "userArchetype" // 🆕 NUEVO
+    private let archetypeKey = "userArchetype"
     private let postsKey = "savedChallengePosts"
     
-    init() {
-        print("UserDataManager init()")
+    private init() {
+        print("UserDataManager init() - Singleton creado")
         
         // 1. Inicializa user con un valor por defecto (obligatorio)
-        self.user = MockData.user  // ← ¡PRIMERO!
+        self.user = MockData.user
         
         // 2. AHORA sí puedes usar self.loadUser()
         if let loadedUser = loadUser() {
@@ -70,7 +71,7 @@ class UserDataManager: ObservableObject {
         print("Posts guardados: \(savedPostsCount)")
     }
     
-    // MARK: - 🆕 Guardar/Cargar Usuario Completo
+    // MARK: - Guardar/Cargar Usuario Completo
     
     private func saveUser() {
         do {
@@ -231,14 +232,14 @@ class UserDataManager: ObservableObject {
         return converted
     }
     
-    // MARK: - 🆕 ACTUALIZADO: Complete Onboarding con Arquetipo
+    // MARK: - Complete Onboarding con Arquetipo
     func completeOnboarding(
         team: String?,
-        archetype: UserArchetype?, // 🆕 NUEVO parámetro
+        archetype: UserArchetype?,
         interests: Set<LocationType>
     ) {
         user.teamPreference = team ?? "Explorer"
-        user.archetype = archetype // 🆕 Guardar arquetipo
+        user.archetype = archetype
         user.opinionOnboardingPlace = interests
         
         print("✅ Onboarding completado")
@@ -247,7 +248,7 @@ class UserDataManager: ObservableObject {
         print("   Interests: \(interests.map { String(describing: $0) })")
     }
     
-    // MARK: - Métodos existentes (sin cambios)
+    // MARK: - Métodos existentes
     func addPoints(_ points: Int) {
         user.points += points
         print("➕ \(points) puntos. Total: \(user.points)")

@@ -18,6 +18,9 @@ final class MapViewModel: ObservableObject {
     private let denueService = DENUEService()
     private var cancellables = Set<AnyCancellable>()
     
+    // ✅ USAR SINGLETON COMPARTIDO
+    private let locationService = SharedLocationService.shared
+    
     private var locationCache = CacheManager<[MapLocation]>()
     private var fetchedGridKeys = Set<String>()
     private let gridCellSizeInMeters: CLLocationDistance = 2500
@@ -30,13 +33,23 @@ final class MapViewModel: ObservableObject {
             let uniqueNewLocations = newLocations.filter { !existingIDs.contains($0.denueID) }
             locations.append(contentsOf: uniqueNewLocations)
         }
+        
+        func getAll() -> [MapLocation] {
+            return locations
+        }
+        
+        func clear() {
+            locations = []
+        }
     }
     
     private let locationStore = LocationStore()
 
     init() {
+        // ✅ Inicializar con la ubicación del singleton
+        let currentLocation = SharedLocationService.shared.location
         self.mapRegion = MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 19.4326, longitude: -99.1332),
+            center: currentLocation.coordinate,
             span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
         )
         
@@ -54,36 +67,70 @@ final class MapViewModel: ObservableObject {
             .store(in: &cancellables)
         
         $selectedFilters
-            .sink { [weak self] _ in self?.applyFilters() }
+            .sink { [weak self] _ in
+                Task {
+                    await self?.applyFilters()
+                }
+            }
+            .store(in: &cancellables)
+        
+        // ⭐ CRÍTICO: Escuchar cambios de ubicación del singleton
+        locationService.$location
+            .debounce(for: .seconds(0.3), scheduler: RunLoop.main)
+            .sink { [weak self] newLocation in
+                guard let self = self else { return }
+                print("🗺️ MapViewModel detectó cambio de ubicación: (\(newLocation.coordinate.latitude), \(newLocation.coordinate.longitude))")
+                
+                Task {
+                    // Centrar el mapa en la nueva ubicación
+                    await MainActor.run {
+                        withAnimation {
+                            self.mapRegion = MKCoordinateRegion(
+                                center: newLocation.coordinate,
+                                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+                            )
+                        }
+                    }
+                    
+                    // Limpiar datos anteriores y recargar
+                    await self.locationStore.clear()
+                    self.fetchedGridKeys.removeAll()
+                    await self.updateVisibleGridAndFetchData()
+                }
+            }
             .store(in: &cancellables)
     }
     
     // MARK: - Data Loading and Orchestration
     
     func loadInitialData() async {
+        // Cargar datos mock inicialmente
         self.filteredLocations = MockData.sampleLocations
         await updateVisibleGridAndFetchData()
     }
     
-    private func updateVisibleGridAndFetchData() {
+    private func updateVisibleGridAndFetchData() async {
         let centerKey = gridKey(for: mapRegion.center)
             
         guard !fetchedGridKeys.contains(centerKey) else { return }
         
-        Task(priority: .userInitiated) {
-            isLoading = true
-            fetchedGridKeys.insert(centerKey)
-                
-            await withTaskGroup(of: Void.self) { group in
-                for category in Array(selectedFilters) {
-                    group.addTask {
-                        await self.loadBusinesses(for: category, gridKey: centerKey, near: self.mapRegion.center, radius: Int(self.gridCellSizeInMeters))
-                    }
+        isLoading = true
+        fetchedGridKeys.insert(centerKey)
+            
+        await withTaskGroup(of: Void.self) { group in
+            for category in Array(selectedFilters) {
+                group.addTask {
+                    await self.loadBusinesses(
+                        for: category,
+                        gridKey: centerKey,
+                        near: self.mapRegion.center,
+                        radius: Int(self.gridCellSizeInMeters)
+                    )
                 }
             }
-                
-            isLoading = false
         }
+            
+        isLoading = false
     }
 
     private func loadBusinesses(for category: LocationType, gridKey: String, near coordinate: CLLocationCoordinate2D, radius: Int) async {
@@ -93,13 +140,21 @@ final class MapViewModel: ObservableObject {
             await addLocationsToMap(cachedLocations)
             return
         }
+        
         do {
-            let businesses = try await denueService.fetchBusinesses(for: category, gridKey: gridKey, near: coordinate, radiusInMeters: radius)
+            let businesses = try await denueService.fetchBusinesses(
+                for: category,
+                gridKey: gridKey,
+                near: coordinate,
+                radiusInMeters: radius
+            )
             locationCache.setValue(businesses, forKey: cacheKey)
             await addLocationsToMap(businesses)
         } catch {
-            self.errorMessage = "Could not load some local businesses. Please check your connection."
-            self.showAlert = true
+            await MainActor.run {
+                self.errorMessage = "Could not load some local businesses. Please check your connection."
+                self.showAlert = true
+            }
             print("Error fetching category \(category): \(error)")
         }
     }
@@ -107,18 +162,28 @@ final class MapViewModel: ObservableObject {
     // MARK: - Filtering and State Management
     private func addLocationsToMap(_ newLocations: [MapLocation]) async {
         await locationStore.add(newLocations: newLocations)
-        self.filteredLocations = await locationStore.locations
+        let allLocations = await locationStore.getAll()
+        
+        await MainActor.run {
+            self.filteredLocations = allLocations.filter { location in
+                selectedFilters.contains(location.type)
+            }
+        }
     }
     
-    func applyFilters() {
-        // Este método puede implementarse para filtrar locations adicionales si es necesario
-        // Por ahora, el filtrado se maneja en toggleFilter
+    private func applyFilters() async {
+        let allLocations = await locationStore.getAll()
+        
+        await MainActor.run {
+            self.filteredLocations = allLocations.filter { location in
+                selectedFilters.contains(location.type)
+            }
+        }
     }
     
     func toggleFilter(for type: LocationType) {
         if selectedFilters.contains(type) {
             selectedFilters.remove(type)
-            filteredLocations.removeAll { $0.type == type }
         } else {
             selectedFilters.insert(type)
             Task {
